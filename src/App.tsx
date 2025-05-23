@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import RuleSetsPage from "./pages/RuleSetsPage";
+import RuleSetDetailPage from "./pages/RuleSetDetailPage";
 import CreateRuleSetPage from "./pages/CreateRuleSetPage";
 import EditRuleSetPage from "./pages/EditRuleSetPage";
 import BreachLogPage from "./pages/BreachLogPage";
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           
           <Route path="/admin/rulesets" element={<RuleSetsPage />} />
+          <Route path="/admin/rulesets/:id" element={<RuleSetDetailPage />} />
           <Route path="/admin/rulesets/create" element={<CreateRuleSetPage />} />
           <Route path="/admin/rulesets/:id/edit" element={<EditRuleSetPage />} />
           <Route path="/admin/breaches" element={<BreachLogPage />} />
