@@ -72,7 +72,7 @@ const BreachLogPage: React.FC = () => {
   const [selectedMarket, setSelectedMarket] = useState<Market>('All');
   const [providerSearch, setProviderSearch] = useState('');
   const [selectedRuleSet, setSelectedRuleSet] = useState('all');
-  const [dateRange, setDateRange] = useState<DateRange>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 7),
     to: new Date()
   });
@@ -92,8 +92,8 @@ const BreachLogPage: React.FC = () => {
       
       // Date range filter
       const breachDate = new Date(breach.timestamp);
-      const dateMatch = (!dateRange.from || breachDate >= dateRange.from) && 
-                       (!dateRange.to || breachDate <= dateRange.to);
+      const dateMatch = (!dateRange?.from || breachDate >= dateRange.from) && 
+                       (!dateRange?.to || breachDate <= dateRange.to);
       
       return marketMatch && providerMatch && ruleSetMatch && dateMatch;
     });

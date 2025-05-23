@@ -38,7 +38,7 @@ interface Step1BasicsProps {
     description?: string;
     markets?: Market[];
   };
-  onNext: (data: FormData) => void;
+  onNext: (data: { name: string; description?: string; markets: Market[] }) => void;
   onCancel: () => void;
 }
 
@@ -59,7 +59,11 @@ const Step1Basics: React.FC<Step1BasicsProps> = ({ initialData, onNext, onCancel
   ] as const;
   
   const onSubmit = (data: FormData) => {
-    onNext(data);
+    onNext({
+      name: data.name,
+      description: data.description,
+      markets: data.markets as Market[]
+    });
   };
   
   return (

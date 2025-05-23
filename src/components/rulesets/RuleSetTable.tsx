@@ -9,7 +9,8 @@ import {
   Check,
   AlertTriangle,
   Infinity,
-  Ban
+  Ban,
+  Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -104,16 +105,16 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
     return (
       <div className="flex space-x-2">
         {ruleSet.enabledRules.coolingOff && (
-          <AlertTriangle className="h-5 w-5 text-warning" title="Cooling-Off" />
+          <AlertTriangle className="h-5 w-5 text-warning" />
         )}
         {ruleSet.enabledRules.sameDirectionGuard && (
-          <Ban className="h-5 w-5 text-primary" title="Same-Direction Guard" />
+          <Ban className="h-5 w-5 text-primary" />
         )}
         {ruleSet.enabledRules.maxActiveTrades && (
-          <Infinity className="h-5 w-5 text-secondary" title="Max Active Trades" />
+          <Infinity className="h-5 w-5 text-secondary" />
         )}
         {ruleSet.enabledRules.positivePipCancelLimit && (
-          <Check className="h-5 w-5 text-success" title="Positive-Pip Cancel-Limit" />
+          <Check className="h-5 w-5 text-success" />
         )}
       </div>
     );
@@ -200,7 +201,7 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
                     <Checkbox 
                       checked={selectedRuleSets.includes(ruleSet.id)}
                       onCheckedChange={(checked) => 
-                        handleSelectRow(ruleSet.id, !!checked, event as React.MouseEvent)
+                        handleSelectRow(ruleSet.id, !!checked, e as unknown as React.MouseEvent)
                       }
                       aria-label={`Select ${ruleSet.name}`}
                     />
