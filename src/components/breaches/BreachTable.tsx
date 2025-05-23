@@ -22,6 +22,8 @@ interface BreachTableProps {
 const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) => {
   const [selectedBreach, setSelectedBreach] = useState<BreachLog | null>(null);
   
+  console.log('BreachTable received breaches:', breaches);
+  
   const handleRowClick = (breach: BreachLog) => {
     setSelectedBreach(breach);
   };
@@ -38,6 +40,8 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
         return 'bg-destructive text-destructive-foreground';
       case 'Limited':
         return 'bg-secondary text-secondary-foreground';
+      case 'Suspended':
+        return 'bg-red-500 text-white';
       default:
         return 'bg-primary text-primary-foreground';
     }
@@ -62,6 +66,9 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
               <tr>
                 <td colSpan={6} className="text-center py-10">
                   <p className="text-muted-foreground">No breach logs found</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Try adjusting your filters or date range
+                  </p>
                 </td>
               </tr>
             ) : (
@@ -153,7 +160,6 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
                                   subRule: breach.subRule,
                                   action: breach.action,
                                   details: breach.details,
-                                  // This would normally include more data from the actual breach
                                 }, null, 2)}
                               </pre>
                             </div>
