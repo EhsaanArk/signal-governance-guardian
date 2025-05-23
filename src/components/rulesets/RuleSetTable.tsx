@@ -366,8 +366,8 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
-      </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
