@@ -1,10 +1,10 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Market } from '@/types';
+import { Market } from '@/types/database';
 
 interface MarketChipProps {
-  market: Market;
+  market: Market | 'All';
   onClick?: () => void;
   selected?: boolean;
 }

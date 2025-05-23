@@ -1,24 +1,7 @@
-
-export type Market = 'Forex' | 'Crypto' | 'Indices' | 'All';
+// Re-export database types for backward compatibility
+export type { Market, RuleSet, BreachEvent, ActiveCooldown } from './database';
 
 export type RuleStatus = 'On' | 'Off' | 'All';
-
-export interface RuleSet {
-  id: string;
-  name: string;
-  description?: string;
-  markets: Market[];
-  enabledRules: {
-    coolingOff: boolean;
-    sameDirectionGuard: boolean;
-    maxActiveTrades: boolean;
-    positivePipCancelLimit: boolean;
-  };
-  breaches24h: number;
-  status: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface BreachLog {
   id: string;

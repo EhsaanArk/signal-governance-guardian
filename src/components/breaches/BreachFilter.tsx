@@ -11,16 +11,16 @@ import {
 } from '@/components/ui/select';
 import { DatePickerWithRange } from '../common/DatePickerWithRange';
 import MarketChip from '../common/MarketChip';
-import { Market } from '@/types';
+import { Market } from '@/types/database';
 import { DateRange } from 'react-day-picker';
 
 interface BreachFilterProps {
-  selectedMarket: Market;
+  selectedMarket: Market | 'All';
   providerSearch: string;
   selectedRuleSet: string;
   dateRange: DateRange | undefined;
   ruleSets: Array<{ id: string; name: string }>;
-  onMarketChange: (market: Market) => void;
+  onMarketChange: (market: Market | 'All') => void;
   onProviderSearchChange: (search: string) => void;
   onRuleSetChange: (ruleSetId: string) => void;
   onDateRangeChange: (range: DateRange | undefined) => void;
@@ -37,7 +37,7 @@ const BreachFilter: React.FC<BreachFilterProps> = ({
   onRuleSetChange,
   onDateRangeChange
 }) => {
-  const markets: Market[] = ['All', 'Forex', 'Crypto', 'Indices'];
+  const markets: (Market | 'All')[] = ['All', 'Forex', 'Crypto', 'Indices'];
   
   return (
     <div className="p-6 border-b bg-background space-y-4">
