@@ -1,23 +1,26 @@
 
-import { CompleteRuleSet } from '@/types';
 import { RuleSet, SubRule } from '@/types/database';
+import { CompleteRuleSet } from '@/types';
 
-export const transformToCompleteRuleSet = (ruleSet: RuleSet, subRules: SubRule[]): CompleteRuleSet => {
-  // Determine enabled rules
-  const enabledRules = {
-    coolingOff: subRules?.some(rule => rule.rule_type === 'cooling_off') || false,
-    sameDirectionGuard: subRules?.some(rule => rule.rule_type === 'same_direction_guard') || false,
-    maxActiveTrades: subRules?.some(rule => rule.rule_type === 'max_active_trades') || false,
-    positivePipCancelLimit: subRules?.some(rule => rule.rule_type === 'positive_pip_cancel_limit') || false,
+export const transformToCompleteRuleSet = (
+  ruleSet: RuleSet, 
+  subRules: SubRule[],
+  breaches24h: number = 0
+): CompleteRuleSet => {
+  // Helper function to get rule configuration or default
+  const getRuleConfig = (ruleType: string, defaultConfig: any) => {
+    const rule = subRules.find(sr => sr.rule_type === ruleType);
+    return rule?.configuration || defaultConfig;
   };
-  
-  // Get rule configurations with proper type casting
-  const coolingOffRule = subRules?.find(rule => rule.rule_type === 'cooling_off');
-  const sameDirectionRule = subRules?.find(rule => rule.rule_type === 'same_direction_guard');
-  const maxActiveRule = subRules?.find(rule => rule.rule_type === 'max_active_trades');
-  const positivePipRule = subRules?.find(rule => rule.rule_type === 'positive_pip_cancel_limit');
-  
-  const completeRuleSet: CompleteRuleSet = {
+
+  // Helper function to check if rule is enabled
+  const isRuleEnabled = (ruleType: string) => {
+    const rule = subRules.find(sr => sr.rule_type === ruleType);
+    return rule?.is_enabled || false;
+  };
+
+  return {
+    // Database properties
     id: ruleSet.id,
     name: ruleSet.name,
     description: ruleSet.description,
@@ -26,35 +29,50 @@ export const transformToCompleteRuleSet = (ruleSet: RuleSet, subRules: SubRule[]
     created_at: ruleSet.created_at,
     updated_at: ruleSet.updated_at,
     created_by: ruleSet.created_by,
-    enabledRules,
-    breaches24h: 0, // TODO: Calculate from breach_events table
+    
+    // Frontend-specific computed properties
+    enabledRules: {
+      coolingOff: isRuleEnabled('cooling_off'),
+      sameDirectionGuard: isRuleEnabled('same_direction_guard'),
+      maxActiveTrades: isRuleEnabled('max_active_trades'),
+      positivePipCancelLimit: isRuleEnabled('positive_pip_cancel_limit'),
+    },
+    breaches24h,
     status: ruleSet.is_active,
-    coolingOff: (coolingOffRule?.configuration as any) || { 
-      enabled: false, 
-      tiers: [{ threshold: 2, window: 12, coolOff: 24 }], 
-      metric: 'SLCount' 
+    
+    // Rule configurations with defaults
+    coolingOff: {
+      enabled: isRuleEnabled('cooling_off'),
+      ...getRuleConfig('cooling_off', {
+        tiers: [{ threshold: 2, window: 12, coolOff: 24 }],
+        metric: 'SLCount',
+      })
     },
-    sameDirectionGuard: (sameDirectionRule?.configuration as any) || { 
-      enabled: false, 
-      pairScope: 'All', 
-      directions: { long: true, short: true } 
+    sameDirectionGuard: {
+      enabled: isRuleEnabled('same_direction_guard'),
+      ...getRuleConfig('same_direction_guard', {
+        pairScope: 'All',
+        directions: { long: true, short: true },
+      })
     },
-    maxActiveTrades: (maxActiveRule?.configuration as any) || { 
-      enabled: false, 
-      baseCap: 10, 
-      incrementPerWin: 1, 
-      hardCap: null, 
-      resetPolicy: 'Never' 
+    maxActiveTrades: {
+      enabled: isRuleEnabled('max_active_trades'),
+      ...getRuleConfig('max_active_trades', {
+        baseCap: 10,
+        incrementPerWin: 1,
+        hardCap: null,
+        resetPolicy: 'Never',
+      })
     },
-    positivePipCancelLimit: (positivePipRule?.configuration as any) || { 
-      enabled: false, 
-      plBand: { from: 0, to: 10 }, 
-      minHoldTime: 5, 
-      maxCancels: 2, 
-      window: 'UTCDay', 
-      suspensionDuration: 24 
-    }
+    positivePipCancelLimit: {
+      enabled: isRuleEnabled('positive_pip_cancel_limit'),
+      ...getRuleConfig('positive_pip_cancel_limit', {
+        plBand: { from: 0, to: 10 },
+        minHoldTime: 5,
+        maxCancels: 2,
+        window: 'UTCDay',
+        suspensionDuration: 24,
+      })
+    },
   };
-  
-  return completeRuleSet;
 };

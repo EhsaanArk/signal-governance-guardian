@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { fetchRuleSets, updateRuleSet, deleteRuleSet } from '@/lib/api/rule-sets';
+import { fetchBreachCounts24h } from '@/lib/api/breach-counts';
 import { supabase } from '@/integrations/supabase/client';
 import { CompleteRuleSet } from '@/types';
 import { SubRule } from '@/types/database';
@@ -26,7 +26,11 @@ export const useRuleSets = () => {
       
       console.log('Fetched rule sets:', ruleSetData);
       
-      // Transform rule sets with sub-rules
+      // Fetch breach counts for the last 24 hours
+      const { data: breachCounts } = await fetchBreachCounts24h();
+      console.log('Breach counts 24h:', breachCounts);
+      
+      // Transform rule sets with sub-rules and breach counts
       const ruleSetPromises = ruleSetData.map(async (ruleSet) => {
         const { data: subRulesData } = await supabase
           .from('sub_rules')
@@ -42,7 +46,10 @@ export const useRuleSets = () => {
           configuration: rule.configuration as Record<string, any>
         }));
         
-        return transformToCompleteRuleSet(ruleSet, subRules);
+        // Get breach count for this rule set
+        const breaches24h = breachCounts?.[ruleSet.id] || 0;
+        
+        return transformToCompleteRuleSet(ruleSet, subRules, breaches24h);
       });
       
       const completeRuleSets = await Promise.all(ruleSetPromises);
