@@ -1,158 +1,162 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { CoolDown, CoolDownStats } from '@/types';
 
-export async function fetchActiveCooldowns() {
-  console.log('Fetching active cooldowns...');
-  
+// Test cooldowns table access
+export async function testCooldownsConnection(): Promise<boolean> {
   try {
-    // First get the cooldown data
-    const { data: cooldownData, error: cooldownError } = await supabase
+    console.log('🔍 Testing cooldowns table connection...');
+    const { data, error } = await supabase
       .from('active_cooldowns')
-      .select('*')
-      .eq('status', 'active')
-      .order('expires_at', { ascending: true });
-
-    if (cooldownError) {
-      console.error('Error fetching active cooldowns:', cooldownError);
-      return { data: [], error: cooldownError };
+      .select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('❌ Cooldowns connection test failed:', error);
+      return false;
     }
-
-    console.log('Raw cooldown data:', cooldownData);
-
-    if (!cooldownData || cooldownData.length === 0) {
-      console.log('No active cooldowns found');
-      return { data: [], error: null };
-    }
-
-    // Get unique IDs for related data
-    const providerIds = [...new Set(cooldownData.map(c => c.provider_id))];
-    const ruleSetIds = [...new Set(cooldownData.map(c => c.rule_set_id))];
-
-    console.log('Fetching related data for cooldowns:', { providerIds, ruleSetIds });
-
-    // Fetch providers
-    const { data: providers } = await supabase
-      .from('signal_providers')
-      .select('id, provider_name')
-      .in('id', providerIds);
-
-    // Fetch rule sets
-    const { data: ruleSets } = await supabase
-      .from('rule_sets')
-      .select('id, name')
-      .in('id', ruleSetIds);
-
-    console.log('Related cooldown data fetched:', { providers, ruleSets });
-
-    // Create lookup maps
-    const providerMap = new Map(providers?.map(p => [p.id, p.provider_name]) || []);
-    const ruleSetMap = new Map(ruleSets?.map(rs => [rs.id, rs.name]) || []);
-
-    // Transform the data
-    const transformedData = cooldownData.map(cooldown => ({
-      ...cooldown,
-      signal_provider: providerMap.get(cooldown.provider_id) ? {
-        provider_name: providerMap.get(cooldown.provider_id)
-      } : undefined,
-      rule_set: ruleSetMap.get(cooldown.rule_set_id) ? {
-        id: cooldown.rule_set_id,
-        name: ruleSetMap.get(cooldown.rule_set_id)
-      } : undefined
-    }));
-
-    console.log('Transformed cooldown data:', transformedData);
-    return { data: transformedData, error: null };
-
+    
+    console.log('✅ Cooldowns connection successful. Count:', data);
+    return true;
   } catch (error) {
-    console.error('Error in fetchActiveCooldowns:', error);
-    return { data: [], error: error as any };
+    console.error('❌ Cooldowns connection test exception:', error);
+    return false;
   }
 }
 
-export async function endCooldown(cooldownId: string, reason: string) {
-  const { data, error } = await supabase
-    .from('active_cooldowns')
-    .update({
-      status: 'ended_manually',
-      end_reason: reason,
-      ended_at: new Date().toISOString()
-    })
-    .eq('id', cooldownId)
-    .select();
+export async function fetchCooldowns(): Promise<CoolDown[]> {
+  console.log('🚀 Starting cooldowns fetch...');
+  
+  // Test connection first
+  const connectionOk = await testCooldownsConnection();
+  if (!connectionOk) {
+    console.error('❌ Cooldowns database connection failed');
+    throw new Error('Cooldowns database connection failed');
+  }
 
-  return { data, error };
+  try {
+    console.log('📊 Fetching active cooldowns with related data...');
+    
+    const { data, error } = await supabase
+      .from('active_cooldowns')
+      .select(`
+        *,
+        signal_provider:signal_providers!active_cooldowns_provider_id_fkey(provider_name),
+        rule_set:rule_sets!active_cooldowns_rule_set_id_fkey(name)
+      `)
+      .eq('status', 'active')
+      .order('expires_at', { ascending: true });
+
+    if (error) {
+      console.error('❌ Error fetching cooldowns:', error);
+      console.error('Error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
+
+    console.log('✅ Successfully fetched cooldowns');
+    console.log('📈 Total active cooldowns found:', data?.length || 0);
+
+    if (!data || data.length === 0) {
+      console.log('📭 No active cooldowns found');
+      return [];
+    }
+
+    console.log('📋 Sample cooldowns:', data.slice(0, 3));
+
+    // Transform the data
+    const cooldowns: CoolDown[] = data.map(cooldown => {
+      const now = new Date();
+      const expiresAt = new Date(cooldown.expires_at);
+      const timeRemaining = expiresAt.getTime() - now.getTime();
+      
+      // Calculate remaining time display
+      const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+      const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+      const remainingTime = timeRemaining > 0 
+        ? `${hours}h ${minutes}m`
+        : 'Expired';
+
+      return {
+        id: cooldown.id,
+        provider: cooldown.signal_provider?.provider_name || 'Unknown Provider',
+        market: cooldown.market,
+        ruleSetId: cooldown.rule_set_id,
+        ruleSetName: cooldown.rule_set?.name || 'Unknown Rule Set',
+        startedAt: cooldown.started_at,
+        endsAt: cooldown.expires_at,
+        remainingTime
+      };
+    });
+
+    console.log('🎯 Cooldowns transformation complete:', cooldowns.length);
+    return cooldowns;
+
+  } catch (error) {
+    console.error('💥 Exception during cooldowns fetch:', error);
+    throw error;
+  }
 }
 
-export async function getCooldownStats() {
-  console.log('Fetching cooldown stats...');
+export async function fetchCooldownStats(): Promise<CoolDownStats> {
+  console.log('📊 Fetching cooldown statistics...');
   
   try {
-    // Get count of providers in cooldown
-    const { data: cooldownData, error: cooldownError } = await supabase
-      .from('active_cooldowns')
-      .select('provider_id')
-      .eq('status', 'active');
-
-    if (cooldownError) {
-      console.error('Error fetching cooldown stats:', cooldownError);
+    const cooldowns = await fetchCooldowns();
+    
+    if (cooldowns.length === 0) {
+      console.log('📭 No cooldowns for stats calculation');
       return {
         providersInCooldown: 0,
         avgRemainingTime: '0h 0m',
-        topBreachedRuleSet: { name: 'N/A', count: 0 }
+        topBreachedRuleSet: {
+          name: 'None',
+          count: 0
+        }
       };
     }
 
-    const providersInCooldown = new Set(cooldownData?.map(c => c.provider_id) || []).size;
+    // Calculate providers in cooldown
+    const uniqueProviders = new Set(cooldowns.map(c => c.provider));
+    const providersInCooldown = uniqueProviders.size;
 
-    // Get most breached rule set in last 24h
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
+    // Calculate average remaining time
+    const totalMinutes = cooldowns.reduce((sum, cooldown) => {
+      const now = new Date();
+      const expiresAt = new Date(cooldown.endsAt);
+      const remainingMs = Math.max(0, expiresAt.getTime() - now.getTime());
+      return sum + (remainingMs / (1000 * 60)); // Convert to minutes
+    }, 0);
 
-    const { data: breachData } = await supabase
-      .from('breach_events')
-      .select('rule_set_id')
-      .gte('occurred_at', yesterday.toISOString());
+    const avgMinutes = Math.floor(totalMinutes / cooldowns.length);
+    const avgHours = Math.floor(avgMinutes / 60);
+    const avgRemainingMinutes = avgMinutes % 60;
+    const avgRemainingTime = `${avgHours}h ${avgRemainingMinutes}m`;
 
-    console.log('Breach data for stats:', breachData);
+    // Find most breached rule set
+    const ruleSetCounts = cooldowns.reduce((acc, cooldown) => {
+      acc[cooldown.ruleSetName] = (acc[cooldown.ruleSetName] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
-    // Get rule set names for the breach data
-    const ruleSetIds = [...new Set(breachData?.map(b => b.rule_set_id) || [])];
-    const { data: ruleSets } = await supabase
-      .from('rule_sets')
-      .select('id, name')
-      .in('id', ruleSetIds);
+    const topEntry = Object.entries(ruleSetCounts).reduce((max, [name, count]) => 
+      count > max.count ? { name, count } : max
+    , { name: 'None', count: 0 });
 
-    const ruleSetMap = new Map(ruleSets?.map(rs => [rs.id, rs.name]) || []);
-
-    const ruleSetCounts: Record<string, { name: string; count: number }> = {};
-    breachData?.forEach(breach => {
-      const ruleSetName = ruleSetMap.get(breach.rule_set_id) || 'Unknown';
-      if (!ruleSetCounts[ruleSetName]) {
-        ruleSetCounts[ruleSetName] = { name: ruleSetName, count: 0 };
-      }
-      ruleSetCounts[ruleSetName].count++;
-    });
-
-    const topBreachedRuleSet = Object.values(ruleSetCounts)
-      .sort((a, b) => b.count - a.count)[0] || { name: 'N/A', count: 0 };
-
-    console.log('Cooldown stats calculated:', {
+    const stats = {
       providersInCooldown,
-      topBreachedRuleSet
-    });
-
-    return {
-      providersInCooldown,
-      avgRemainingTime: '2h 15m', // Placeholder calculation
-      topBreachedRuleSet
+      avgRemainingTime,
+      topBreachedRuleSet: topEntry
     };
+
+    console.log('✅ Cooldown stats calculated:', stats);
+    return stats;
 
   } catch (error) {
-    console.error('Error calculating cooldown stats:', error);
-    return {
-      providersInCooldown: 0,
-      avgRemainingTime: '0h 0m',
-      topBreachedRuleSet: { name: 'N/A', count: 0 }
-    };
+    console.error('💥 Exception during cooldown stats fetch:', error);
+    throw error;
   }
 }

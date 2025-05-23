@@ -22,58 +22,50 @@ export const useBreachEvents = () => {
 
   const breachService = new BreachEventsService();
 
-  const { data: breaches = [], isLoading, refetch } = useQuery({
+  const { data: breaches = [], isLoading, error, refetch } = useQuery({
     queryKey: ['breachEvents', selectedMarket, providerSearch, selectedRuleSet, dateRange],
     queryFn: async () => {
-      console.log('=== FETCHING BREACH EVENTS - TIMEZONE FIXED FILTERING ===');
-      console.log('Applied filters:', {
+      console.log('🎯 ==> BREACH EVENTS QUERY STARTED <==');
+      console.log('🔧 Applied filters:', {
         selectedMarket,
         providerSearch,
         selectedRuleSet,
         dateRange: {
           from: dateRange?.from?.toISOString(),
-          to: dateRange?.to?.toISOString(),
-          fromLocal: dateRange?.from?.toString(),
-          toLocal: dateRange?.to?.toString()
+          to: dateRange?.to?.toISOString()
         }
       });
 
       try {
-        // Step 1: Fetch all breach events
+        // Step 1: Fetch all breach events with connection test
+        console.log('📡 Step 1: Fetching breach events...');
         const allBreaches = await breachService.fetchAllBreachEvents();
         
         if (allBreaches.length === 0) {
-          console.log('No breach events exist in the database at all');
+          console.log('📭 No breach events exist in the database');
           return [];
         }
 
-        console.log(`Found ${allBreaches.length} total breach events in database`);
-        console.log('Sample breach dates from database:', allBreaches.slice(0, 5).map(b => ({
-          id: b.id,
-          occurred_at: b.occurred_at,
-          asDate: new Date(b.occurred_at).toISOString()
-        })));
+        console.log(`📊 Found ${allBreaches.length} total breach events in database`);
 
         // Step 2: Apply filters with enhanced debugging
+        console.log('🔍 Step 2: Applying filters...');
         let filteredBreaches = BreachFilters.applyDateRangeFilter(allBreaches, dateRange);
-        console.log(`After date filtering: ${filteredBreaches.length} breach events`);
+        console.log(`📅 After date filtering: ${filteredBreaches.length} breach events`);
         
         filteredBreaches = BreachFilters.applyMarketFilter(filteredBreaches, selectedMarket);
-        console.log(`After market filtering: ${filteredBreaches.length} breach events`);
+        console.log(`🏪 After market filtering: ${filteredBreaches.length} breach events`);
         
         filteredBreaches = BreachFilters.applyRuleSetFilter(filteredBreaches, selectedRuleSet);
-        console.log(`After rule set filtering: ${filteredBreaches.length} breach events`);
+        console.log(`📋 After rule set filtering: ${filteredBreaches.length} breach events`);
 
         if (filteredBreaches.length === 0) {
-          console.log('No breach events match the current filters');
-          console.log('This could be due to:');
-          console.log('1. Date range not covering the breach dates');
-          console.log('2. Market filter excluding the breach markets');
-          console.log('3. Rule set filter excluding the breach rule sets');
+          console.log('❌ No breach events match the current filters');
           return [];
         }
 
         // Step 3: Fetch related data
+        console.log('🔗 Step 3: Fetching related data...');
         const relatedData = await breachService.fetchRelatedData(filteredBreaches);
         const { providerMap, ruleSetMap, subRuleMap } = BreachTransformer.createLookupMaps(
           relatedData.providers,
@@ -82,6 +74,7 @@ export const useBreachEvents = () => {
         );
 
         // Step 4: Transform data
+        console.log('🔄 Step 4: Transforming data...');
         let transformedData = BreachTransformer.transformBreachEvents(
           filteredBreaches,
           providerMap,
@@ -90,19 +83,32 @@ export const useBreachEvents = () => {
         );
 
         // Step 5: Apply provider search filter
+        console.log('🔍 Step 5: Applying provider search...');
         transformedData = BreachFilters.applyProviderSearchFilter(transformedData, providerSearch);
 
-        console.log('Final transformed breach events:', transformedData.length);
-        console.log('Final breach events sample:', transformedData.slice(0, 2));
+        console.log('✅ Final transformed breach events:', transformedData.length);
+        console.log('🎯 ==> BREACH EVENTS QUERY COMPLETED <==');
         return transformedData;
 
       } catch (error) {
-        console.error('Error in breach events query:', error);
-        toast.error('Failed to fetch breach events');
+        console.error('💥 ==> BREACH EVENTS QUERY FAILED <==');
+        console.error('Error details:', error);
+        toast.error(`Failed to fetch breach events: ${error.message || 'Unknown error'}`);
         return [];
       }
-    }
+    },
+    retry: (failureCount, error) => {
+      // Only retry once for network errors, not for RLS or permissions errors
+      console.log(`🔄 Query retry attempt ${failureCount}`, error);
+      return failureCount < 1;
+    },
+    retryDelay: 1000
   });
+
+  // Log any query errors
+  if (error) {
+    console.error('🚨 Breach events query error:', error);
+  }
 
   const handleEndCoolDown = async (id: string) => {
     try {
@@ -131,6 +137,7 @@ export const useBreachEvents = () => {
     setDateRange,
     breaches,
     isLoading,
+    error,
     handleEndCoolDown
   };
 };
