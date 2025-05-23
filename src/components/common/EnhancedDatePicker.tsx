@@ -18,50 +18,70 @@ interface EnhancedDatePickerProps {
   className?: string;
 }
 
+// Helper function to create normalized dates that work consistently with UTC comparisons
+const createNormalizedDate = (year: number, month: number, day: number) => {
+  return new Date(year, month, day, 12, 0, 0, 0); // Use noon to avoid timezone edge cases
+};
+
 const DATE_PRESETS = [
   {
     label: "Today",
-    getValue: () => ({
-      from: startOfDay(new Date()),
-      to: endOfDay(new Date())
-    })
+    getValue: () => {
+      const today = new Date();
+      return {
+        from: createNormalizedDate(today.getFullYear(), today.getMonth(), today.getDate()),
+        to: createNormalizedDate(today.getFullYear(), today.getMonth(), today.getDate())
+      };
+    }
   },
   {
     label: "Yesterday", 
     getValue: () => {
       const yesterday = subDays(new Date(), 1);
       return {
-        from: startOfDay(yesterday),
-        to: endOfDay(yesterday)
+        from: createNormalizedDate(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()),
+        to: createNormalizedDate(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate())
       };
     }
   },
   {
     label: "Last 7 days",
-    getValue: () => ({
-      from: startOfDay(subDays(new Date(), 6)),
-      to: endOfDay(new Date())
-    })
+    getValue: () => {
+      const end = new Date();
+      const start = subDays(end, 6);
+      return {
+        from: createNormalizedDate(start.getFullYear(), start.getMonth(), start.getDate()),
+        to: createNormalizedDate(end.getFullYear(), end.getMonth(), end.getDate())
+      };
+    }
   },
   {
     label: "Last 30 days",
-    getValue: () => ({
-      from: startOfDay(subDays(new Date(), 29)),
-      to: endOfDay(new Date())
-    })
+    getValue: () => {
+      const end = new Date();
+      const start = subDays(end, 29);
+      return {
+        from: createNormalizedDate(start.getFullYear(), start.getMonth(), start.getDate()),
+        to: createNormalizedDate(end.getFullYear(), end.getMonth(), end.getDate())
+      };
+    }
   },
   {
     label: "Last 90 days",
-    getValue: () => ({
-      from: startOfDay(subDays(new Date(), 89)),
-      to: endOfDay(new Date())
-    })
+    getValue: () => {
+      const end = new Date();
+      const start = subDays(end, 89);
+      return {
+        from: createNormalizedDate(start.getFullYear(), start.getMonth(), start.getDate()),
+        to: createNormalizedDate(end.getFullYear(), end.getMonth(), end.getDate())
+      };
+    }
   },
   {
     label: "All time",
     getValue: () => ({
-      from: new Date(2020, 0, 1),
-      to: new Date(2030, 11, 31)
+      from: createNormalizedDate(2020, 0, 1),
+      to: createNormalizedDate(2030, 11, 31)
     })
   }
 ];
@@ -75,6 +95,7 @@ export function EnhancedDatePicker({
 
   const handlePresetClick = (preset: typeof DATE_PRESETS[0]) => {
     const newRange = preset.getValue();
+    console.log('Preset selected:', preset.label, newRange);
     onDateChange(newRange);
     setIsOpen(false);
   };
@@ -86,12 +107,29 @@ export function EnhancedDatePicker({
 
   const handleCalendarSelect = (selectedDate: DateRange | undefined) => {
     if (selectedDate?.from && selectedDate?.to) {
-      // Ensure proper time boundaries for selected dates
+      // Normalize the selected dates to avoid timezone issues
       const adjustedRange = {
-        from: startOfDay(selectedDate.from),
-        to: endOfDay(selectedDate.to)
+        from: createNormalizedDate(
+          selectedDate.from.getFullYear(),
+          selectedDate.from.getMonth(),
+          selectedDate.from.getDate()
+        ),
+        to: createNormalizedDate(
+          selectedDate.to.getFullYear(),
+          selectedDate.to.getMonth(),
+          selectedDate.to.getDate()
+        )
       };
+      console.log('Calendar selection adjusted:', adjustedRange);
       onDateChange(adjustedRange);
+    } else if (selectedDate?.from) {
+      // Single date selection - normalize it
+      const normalizedDate = createNormalizedDate(
+        selectedDate.from.getFullYear(),
+        selectedDate.from.getMonth(),
+        selectedDate.from.getDate()
+      );
+      onDateChange({ from: normalizedDate, to: undefined });
     } else {
       onDateChange(selectedDate);
     }

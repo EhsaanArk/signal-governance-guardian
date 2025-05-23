@@ -1,4 +1,3 @@
-
 import { BreachEventFilters, RawBreachEvent } from '@/types/breach';
 
 export class BreachFilters {
@@ -9,6 +8,14 @@ export class BreachFilters {
     }
 
     const beforeDateFilter = breaches.length;
+    console.log('=== DATE FILTERING DEBUG ===');
+    console.log('Input date range:', {
+      from: dateRange?.from?.toISOString(),
+      to: dateRange?.to?.toISOString(),
+      fromLocal: dateRange?.from?.toString(),
+      toLocal: dateRange?.to?.toString()
+    });
+
     const filtered = breaches.filter(breach => {
       const breachDate = new Date(breach.occurred_at);
       
@@ -18,27 +25,42 @@ export class BreachFilters {
         return false;
       }
       
+      console.log(`Checking breach ${breach.id} with date: ${breachDate.toISOString()} (${breachDate.toString()})`);
+      
       let fromMatch = true;
       let toMatch = true;
       
       if (dateRange?.from) {
-        fromMatch = breachDate >= dateRange.from;
+        // Convert to UTC for comparison
+        const fromUTC = new Date(Date.UTC(
+          dateRange.from.getFullYear(),
+          dateRange.from.getMonth(),
+          dateRange.from.getDate(),
+          0, 0, 0, 0
+        ));
+        fromMatch = breachDate >= fromUTC;
+        console.log(`  From check: ${breachDate.toISOString()} >= ${fromUTC.toISOString()} = ${fromMatch}`);
       }
       
       if (dateRange?.to) {
-        // Include the entire end date by adding 23:59:59
-        const endOfDay = new Date(dateRange.to);
-        endOfDay.setHours(23, 59, 59, 999);
-        toMatch = breachDate <= endOfDay;
+        // Convert to UTC for comparison and include the entire end date
+        const toUTC = new Date(Date.UTC(
+          dateRange.to.getFullYear(),
+          dateRange.to.getMonth(),
+          dateRange.to.getDate(),
+          23, 59, 59, 999
+        ));
+        toMatch = breachDate <= toUTC;
+        console.log(`  To check: ${breachDate.toISOString()} <= ${toUTC.toISOString()} = ${toMatch}`);
       }
       
-      return fromMatch && toMatch;
+      const result = fromMatch && toMatch;
+      console.log(`  Final result for breach ${breach.id}: ${result}`);
+      return result;
     });
     
     console.log(`Date filter applied: ${beforeDateFilter} -> ${filtered.length} events`);
-    if (dateRange?.from || dateRange?.to) {
-      console.log(`Date range: ${dateRange?.from?.toISOString()} to ${dateRange?.to?.toISOString()}`);
-    }
+    console.log('=== END DATE FILTERING DEBUG ===');
     
     return filtered;
   }

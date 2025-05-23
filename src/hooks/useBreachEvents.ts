@@ -13,9 +13,11 @@ export const useBreachEvents = () => {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
   const [providerSearch, setProviderSearch] = useState('');
   const [selectedRuleSet, setSelectedRuleSet] = useState('all');
+  
+  // Create normalized default date range that includes existing breach events (May 2025)
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2020, 0, 1), // Wide default range from 2020
-    to: new Date(2030, 11, 31)  // to 2030 to catch all data including future dates
+    from: new Date(2020, 0, 1, 12, 0, 0, 0), // Jan 1, 2020 at noon
+    to: new Date(2030, 11, 31, 12, 0, 0, 0)  // Dec 31, 2030 at noon
   });
 
   const breachService = new BreachEventsService();
@@ -23,14 +25,16 @@ export const useBreachEvents = () => {
   const { data: breaches = [], isLoading, refetch } = useQuery({
     queryKey: ['breachEvents', selectedMarket, providerSearch, selectedRuleSet, dateRange],
     queryFn: async () => {
-      console.log('=== FETCHING BREACH EVENTS - ENHANCED DATE FILTERING ===');
+      console.log('=== FETCHING BREACH EVENTS - TIMEZONE FIXED FILTERING ===');
       console.log('Applied filters:', {
         selectedMarket,
         providerSearch,
         selectedRuleSet,
         dateRange: {
           from: dateRange?.from?.toISOString(),
-          to: dateRange?.to?.toISOString()
+          to: dateRange?.to?.toISOString(),
+          fromLocal: dateRange?.from?.toString(),
+          toLocal: dateRange?.to?.toString()
         }
       });
 
@@ -44,17 +48,28 @@ export const useBreachEvents = () => {
         }
 
         console.log(`Found ${allBreaches.length} total breach events in database`);
-        console.log('Sample dates from breach events:', allBreaches.slice(0, 3).map(b => b.occurred_at));
+        console.log('Sample breach dates from database:', allBreaches.slice(0, 5).map(b => ({
+          id: b.id,
+          occurred_at: b.occurred_at,
+          asDate: new Date(b.occurred_at).toISOString()
+        })));
 
-        // Step 2: Apply filters
+        // Step 2: Apply filters with enhanced debugging
         let filteredBreaches = BreachFilters.applyDateRangeFilter(allBreaches, dateRange);
+        console.log(`After date filtering: ${filteredBreaches.length} breach events`);
+        
         filteredBreaches = BreachFilters.applyMarketFilter(filteredBreaches, selectedMarket);
+        console.log(`After market filtering: ${filteredBreaches.length} breach events`);
+        
         filteredBreaches = BreachFilters.applyRuleSetFilter(filteredBreaches, selectedRuleSet);
-
-        console.log(`After filtering: ${filteredBreaches.length} breach events`);
+        console.log(`After rule set filtering: ${filteredBreaches.length} breach events`);
 
         if (filteredBreaches.length === 0) {
           console.log('No breach events match the current filters');
+          console.log('This could be due to:');
+          console.log('1. Date range not covering the breach dates');
+          console.log('2. Market filter excluding the breach markets');
+          console.log('3. Rule set filter excluding the breach rule sets');
           return [];
         }
 
@@ -78,6 +93,7 @@ export const useBreachEvents = () => {
         transformedData = BreachFilters.applyProviderSearchFilter(transformedData, providerSearch);
 
         console.log('Final transformed breach events:', transformedData.length);
+        console.log('Final breach events sample:', transformedData.slice(0, 2));
         return transformedData;
 
       } catch (error) {
