@@ -1,6 +1,5 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { ActiveCooldown, Market } from '@/types/database';
 
 export async function fetchActiveCooldowns() {
   console.log('Fetching active cooldowns...');
@@ -56,6 +55,7 @@ export async function fetchActiveCooldowns() {
         provider_name: providerMap.get(cooldown.provider_id)
       } : undefined,
       rule_set: ruleSetMap.get(cooldown.rule_set_id) ? {
+        id: cooldown.rule_set_id,
         name: ruleSetMap.get(cooldown.rule_set_id)
       } : undefined
     }));

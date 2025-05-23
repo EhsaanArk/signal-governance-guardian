@@ -26,6 +26,11 @@ const CoolDownsPage: React.FC = () => {
 
       console.log('Cooldowns data received:', data);
 
+      if (!data || data.length === 0) {
+        console.log('No active cooldowns found');
+        return [];
+      }
+
       // Transform data to match component expectations
       return data.map(cooldown => {
         const now = new Date();
