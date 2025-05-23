@@ -13,16 +13,16 @@ export const useBreachEvents = () => {
   const [providerSearch, setProviderSearch] = useState('');
   const [selectedRuleSet, setSelectedRuleSet] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30), // Increased to 30 days to catch our dummy data
+    from: subDays(new Date(), 90), // Extended to 90 days to catch all data
     to: new Date()
   });
 
-  // Fetch breach events with proper error handling and debugging
+  // Fetch breach events with simplified approach and comprehensive debugging
   const { data: breaches = [], isLoading, refetch } = useQuery({
     queryKey: ['breachEvents', selectedMarket, providerSearch, selectedRuleSet, dateRange],
     queryFn: async () => {
-      console.log('=== FETCHING BREACH EVENTS ===');
-      console.log('Filters applied:', {
+      console.log('=== FETCHING BREACH EVENTS - SIMPLIFIED APPROACH ===');
+      console.log('Applied filters:', {
         selectedMarket,
         providerSearch,
         selectedRuleSet,
@@ -33,57 +33,68 @@ export const useBreachEvents = () => {
       });
 
       try {
-        // Start with basic breach events query
-        let query = supabase
+        // Step 1: Start with the most basic query to see ALL breach events
+        console.log('Step 1: Fetching ALL breach events first...');
+        const { data: allBreaches, error: allBreachesError } = await supabase
           .from('breach_events')
           .select('*')
           .order('occurred_at', { ascending: false });
 
+        if (allBreachesError) {
+          console.error('Error fetching all breach events:', allBreachesError);
+          throw allBreachesError;
+        }
+
+        console.log('All breach events in database:', allBreaches);
+        console.log('Total breach events found:', allBreaches?.length || 0);
+
+        if (!allBreaches || allBreaches.length === 0) {
+          console.log('No breach events exist in the database at all');
+          return [];
+        }
+
+        // Step 2: Apply filters one by one and see what happens
+        let filteredBreaches = [...allBreaches];
+
+        // Apply date range filter
+        if (dateRange?.from || dateRange?.to) {
+          const beforeDateFilter = filteredBreaches.length;
+          filteredBreaches = filteredBreaches.filter(breach => {
+            const breachDate = new Date(breach.occurred_at);
+            const fromMatch = !dateRange?.from || breachDate >= dateRange.from;
+            const toMatch = !dateRange?.to || breachDate <= new Date(dateRange.to.getTime() + 24 * 60 * 60 * 1000); // Add 1 day to include end date
+            return fromMatch && toMatch;
+          });
+          console.log(`Date filter: ${beforeDateFilter} -> ${filteredBreaches.length} events`);
+        }
+
         // Apply market filter
         if (selectedMarket !== 'All') {
-          console.log('Applying market filter:', selectedMarket);
-          query = query.eq('market', selectedMarket);
+          const beforeMarketFilter = filteredBreaches.length;
+          filteredBreaches = filteredBreaches.filter(breach => breach.market === selectedMarket);
+          console.log(`Market filter (${selectedMarket}): ${beforeMarketFilter} -> ${filteredBreaches.length} events`);
         }
 
         // Apply rule set filter
         if (selectedRuleSet !== 'all') {
-          console.log('Applying rule set filter:', selectedRuleSet);
-          query = query.eq('rule_set_id', selectedRuleSet);
+          const beforeRuleSetFilter = filteredBreaches.length;
+          filteredBreaches = filteredBreaches.filter(breach => breach.rule_set_id === selectedRuleSet);
+          console.log(`Rule set filter (${selectedRuleSet}): ${beforeRuleSetFilter} -> ${filteredBreaches.length} events`);
         }
 
-        // Apply date range filter
-        if (dateRange?.from) {
-          console.log('Applying date from filter:', dateRange.from.toISOString());
-          query = query.gte('occurred_at', dateRange.from.toISOString());
-        }
-        if (dateRange?.to) {
-          const endDate = new Date(dateRange.to);
-          endDate.setHours(23, 59, 59, 999);
-          console.log('Applying date to filter:', endDate.toISOString());
-          query = query.lte('occurred_at', endDate.toISOString());
-        }
+        console.log('Filtered breach events:', filteredBreaches);
 
-        console.log('Executing breach events query...');
-        const { data: breachData, error: breachError } = await query;
-
-        if (breachError) {
-          console.error('Breach events query error:', breachError);
-          throw breachError;
-        }
-
-        console.log('Raw breach events data:', breachData);
-
-        if (!breachData || breachData.length === 0) {
-          console.log('No breach events found with current filters');
+        if (filteredBreaches.length === 0) {
+          console.log('No breach events match the current filters');
           return [];
         }
 
-        // Get unique IDs for related data
-        const providerIds = [...new Set(breachData.map(b => b.provider_id))];
-        const ruleSetIds = [...new Set(breachData.map(b => b.rule_set_id))];
-        const subRuleIds = [...new Set(breachData.map(b => b.sub_rule_id))];
+        // Step 3: Fetch related data for the filtered events
+        const providerIds = [...new Set(filteredBreaches.map(b => b.provider_id))];
+        const ruleSetIds = [...new Set(filteredBreaches.map(b => b.rule_set_id))];
+        const subRuleIds = [...new Set(filteredBreaches.map(b => b.sub_rule_id))];
 
-        console.log('Fetching related data for breach events:', { 
+        console.log('Fetching related data:', { 
           providerIds: providerIds.length, 
           ruleSetIds: ruleSetIds.length, 
           subRuleIds: subRuleIds.length 
@@ -91,9 +102,9 @@ export const useBreachEvents = () => {
 
         // Fetch related data in parallel
         const [
-          { data: providers },
-          { data: ruleSetsData },
-          { data: subRules }
+          { data: providers, error: providersError },
+          { data: ruleSetsData, error: ruleSetsError },
+          { data: subRules, error: subRulesError }
         ] = await Promise.all([
           supabase
             .from('signal_providers')
@@ -109,6 +120,10 @@ export const useBreachEvents = () => {
             .in('id', subRuleIds)
         ]);
 
+        if (providersError) console.error('Error fetching providers:', providersError);
+        if (ruleSetsError) console.error('Error fetching rule sets:', ruleSetsError);
+        if (subRulesError) console.error('Error fetching sub rules:', subRulesError);
+
         console.log('Related data fetched:', { 
           providers: providers?.length || 0, 
           ruleSets: ruleSetsData?.length || 0, 
@@ -120,8 +135,8 @@ export const useBreachEvents = () => {
         const ruleSetMap = new Map(ruleSetsData?.map(rs => [rs.id, rs.name]) || []);
         const subRuleMap = new Map(subRules?.map(sr => [sr.id, sr.rule_type]) || []);
 
-        // Transform data with proper error handling
-        let transformedData = breachData.map(breach => {
+        // Step 4: Transform data
+        let transformedData = filteredBreaches.map(breach => {
           const providerName = providerMap.get(breach.provider_id) || 'Unknown Provider';
           const ruleSetName = ruleSetMap.get(breach.rule_set_id) || 'Unknown Rule Set';
           const subRuleName = subRuleMap.get(breach.sub_rule_id) || 'Unknown Sub Rule';
@@ -158,18 +173,17 @@ export const useBreachEvents = () => {
           };
         });
 
-        console.log('Transformed breach data before provider filter:', transformedData);
-
-        // Apply provider search filter after transformation
+        // Step 5: Apply provider search filter after transformation
         if (providerSearch.trim()) {
+          const beforeProviderSearch = transformedData.length;
           const searchTerm = providerSearch.toLowerCase();
           transformedData = transformedData.filter(breach =>
             breach.provider.toLowerCase().includes(searchTerm)
           );
-          console.log(`Filtered by provider search "${providerSearch}":`, transformedData.length, 'results');
+          console.log(`Provider search filter "${providerSearch}": ${beforeProviderSearch} -> ${transformedData.length} results`);
         }
 
-        console.log('Final breach events data:', transformedData);
+        console.log('Final transformed breach events:', transformedData);
         return transformedData;
 
       } catch (error) {

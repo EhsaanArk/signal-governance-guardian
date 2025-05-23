@@ -23,6 +23,7 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
   const [selectedBreach, setSelectedBreach] = useState<BreachLog | null>(null);
   
   console.log('BreachTable received breaches:', breaches);
+  console.log('BreachTable breaches count:', breaches.length);
   
   const handleRowClick = (breach: BreachLog) => {
     setSelectedBreach(breach);
@@ -67,6 +68,9 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
                 <td colSpan={6} className="text-center py-10">
                   <p className="text-muted-foreground">No breach logs found</p>
                   <p className="text-xs text-muted-foreground mt-2">
+                    Check console logs for debugging information
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
                     Try adjusting your filters or date range
                   </p>
                 </td>
