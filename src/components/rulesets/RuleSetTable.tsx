@@ -103,18 +103,22 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
   const renderRuleIcons = (ruleSet: CompleteRuleSet) => {
     return (
       <div className="flex space-x-2">
-        {ruleSet.enabledRules.coolingOff && (
-          <AlertTriangle className="h-5 w-5 text-warning" />
-        )}
-        {ruleSet.enabledRules.sameDirectionGuard && (
-          <Ban className="h-5 w-5 text-primary" />
-        )}
-        {ruleSet.enabledRules.maxActiveTrades && (
-          <Infinity className="h-5 w-5 text-secondary" />
-        )}
-        {ruleSet.enabledRules.positivePipCancelLimit && (
-          <Check className="h-5 w-5 text-success" />
-        )}
+        {/* ① Cooling-Off ⚠ */}
+        <AlertTriangle 
+          className={`h-5 w-5 ${ruleSet.enabledRules.coolingOff ? 'text-warning' : 'text-gray-300'}`} 
+        />
+        {/* ② Guard ⛔ */}
+        <Ban 
+          className={`h-5 w-5 ${ruleSet.enabledRules.sameDirectionGuard ? 'text-primary' : 'text-gray-300'}`} 
+        />
+        {/* ③ Active-Cap ∞ */}
+        <Infinity 
+          className={`h-5 w-5 ${ruleSet.enabledRules.maxActiveTrades ? 'text-secondary' : 'text-gray-300'}`} 
+        />
+        {/* ④ Cancel-Limit ✔ */}
+        <Check 
+          className={`h-5 w-5 ${ruleSet.enabledRules.positivePipCancelLimit ? 'text-success' : 'text-gray-300'}`} 
+        />
       </div>
     );
   };
@@ -125,7 +129,7 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
     <>
       <div className="table-container">
         {showBulkActions && (
-          <div className="flex items-center justify-between bg-muted/20 p-2 border-b">
+          <div className="sticky top-16 z-20 flex items-center justify-between bg-muted/20 p-2 border-b">
             <div className="text-sm">
               Selected <span className="font-medium">{selectedRuleSets.length}</span> rule sets
             </div>
@@ -154,107 +158,199 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
             </div>
           </div>
         )}
-        <table className="nuroblock-table">
-          <thead>
-            <tr>
-              <th className="w-[5%]">
-                <Checkbox 
-                  onCheckedChange={(checked) => handleSelectAll(!!checked)} 
-                  checked={selectedRuleSets.length === ruleSets.length && ruleSets.length > 0}
-                  aria-label="Select all rule sets"
-                />
-              </th>
-              <th className="w-[22%]">Name</th>
-              <th className="w-[18%]">Markets</th>
-              <th className="w-[22%]">Enabled Rules</th>
-              <th className="w-[10%]">Breaches 24h</th>
-              <th className="w-[8%]">Status</th>
-              <th className="w-[5%]"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {ruleSets.length === 0 ? (
+        
+        {/* Desktop Table */}
+        <div className="hidden md:block">
+          <table className="nuroblock-table">
+            <thead className="sticky top-16 bg-background z-10">
               <tr>
-                <td colSpan={7} className="text-center py-10">
-                  <div className="flex flex-col items-center">
-                    <div className="rounded-full bg-muted p-3 mb-3">
-                      <Shield className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <p className="mb-2">No Rule Sets yet</p>
-                    <Button 
-                      onClick={() => navigate('/admin/rulesets/create')}
-                    >
-                      New Rule Set
-                    </Button>
-                  </div>
-                </td>
+                <th className="w-[5%]">
+                  <Checkbox 
+                    onCheckedChange={(checked) => handleSelectAll(!!checked)} 
+                    checked={selectedRuleSets.length === ruleSets.length && ruleSets.length > 0}
+                    aria-label="Select all rule sets"
+                  />
+                </th>
+                <th className="w-[22%]">Name</th>
+                <th className="w-[18%]">Markets</th>
+                <th className="w-[22%]">Enabled Rules</th>
+                <th className="w-[10%]">Breaches 24h</th>
+                <th className="w-[8%]">Status</th>
+                <th className="w-[5%]"></th>
               </tr>
-            ) : (
-              ruleSets.map((ruleSet) => (
-                <tr 
-                  key={ruleSet.id} 
-                  onClick={() => handleRowClick(ruleSet.id)}
-                  className="cursor-pointer hover:bg-muted/30"
+            </thead>
+            <tbody>
+              {ruleSets.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-10">
+                    <div className="flex flex-col items-center">
+                      <div className="rounded-full bg-muted p-3 mb-3">
+                        <Shield className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <p className="mb-2">No Rule Sets yet</p>
+                      <Button 
+                        onClick={() => navigate('/admin/rulesets/create')}
+                      >
+                        New Rule Set
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                ruleSets.map((ruleSet) => (
+                  <tr 
+                    key={ruleSet.id} 
+                    onClick={() => handleRowClick(ruleSet.id)}
+                    className="cursor-pointer hover:bg-muted/30"
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <Checkbox 
+                        checked={selectedRuleSets.includes(ruleSet.id)}
+                        onCheckedChange={(checked) => handleSelectRow(ruleSet.id, !!checked)}
+                        aria-label={`Select ${ruleSet.name}`}
+                      />
+                    </td>
+                    <td className="font-medium">{ruleSet.name}</td>
+                    <td>
+                      <div className="flex flex-wrap gap-1">
+                        {ruleSet.markets.map((market) => (
+                          <MarketChip key={market} market={market} />
+                        ))}
+                      </div>
+                    </td>
+                    <td>{renderRuleIcons(ruleSet)}</td>
+                    <td>
+                      <BreachBadge count={ruleSet.breaches24h} />
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <StatusToggle 
+                        id={ruleSet.id} 
+                        name={ruleSet.name}
+                        enabled={ruleSet.status} 
+                        onToggle={onStatusChange} 
+                      />
+                    </td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => handleEdit(ruleSet.id, e)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            <span>Edit</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => handleDuplicate(ruleSet.id, e)}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            <span>Duplicate</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => handleDeleteDialog([ruleSet.id], e)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            <span>Delete</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Card Layout */}
+        <div className="md:hidden space-y-4 p-4">
+          {ruleSets.length === 0 ? (
+            <div className="text-center py-10">
+              <div className="flex flex-col items-center">
+                <div className="rounded-full bg-muted p-3 mb-3">
+                  <Shield className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <p className="mb-2">No Rule Sets yet</p>
+                <Button 
+                  onClick={() => navigate('/admin/rulesets/create')}
                 >
-                  <td onClick={(e) => e.stopPropagation()}>
+                  New Rule Set
+                </Button>
+              </div>
+            </div>
+          ) : (
+            ruleSets.map((ruleSet) => (
+              <div 
+                key={ruleSet.id}
+                className="bg-card border rounded-lg p-4 space-y-3"
+                onClick={() => handleRowClick(ruleSet.id)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3">
                     <Checkbox 
                       checked={selectedRuleSets.includes(ruleSet.id)}
                       onCheckedChange={(checked) => handleSelectRow(ruleSet.id, !!checked)}
+                      onClick={(e) => e.stopPropagation()}
                       aria-label={`Select ${ruleSet.name}`}
                     />
-                  </td>
-                  <td className="font-medium">{ruleSet.name}</td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {ruleSet.markets.map((market) => (
-                        <MarketChip key={market} market={market} />
-                      ))}
+                    <div>
+                      <h3 className="font-medium">{ruleSet.name}</h3>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {ruleSet.markets.map((market) => (
+                          <MarketChip key={market} market={market} />
+                        ))}
+                      </div>
                     </div>
-                  </td>
-                  <td>{renderRuleIcons(ruleSet)}</td>
-                  <td>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={(e) => handleEdit(ruleSet.id, e)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        <span>Edit</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => handleDuplicate(ruleSet.id, e)}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        <span>Duplicate</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={(e) => handleDeleteDialog([ruleSet.id], e)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>Delete</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm">
+                      <span className="text-muted-foreground">Rules:</span>
+                      {renderRuleIcons(ruleSet)}
+                    </div>
                     <BreachBadge count={ruleSet.breaches24h} />
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
                     <StatusToggle 
                       id={ruleSet.id} 
                       name={ruleSet.name}
                       enabled={ruleSet.status} 
                       onToggle={onStatusChange} 
                     />
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => handleEdit(ruleSet.id, e)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          <span>Edit</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => handleDuplicate(ruleSet.id, e)}>
-                          <Copy className="mr-2 h-4 w-4" />
-                          <span>Duplicate</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={(e) => handleDeleteDialog([ruleSet.id], e)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          <span>Delete</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
       
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -270,8 +366,8 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        </AlertDialogFooter>
+      </div>
     </>
   );
 };

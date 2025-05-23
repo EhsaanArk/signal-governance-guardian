@@ -20,8 +20,18 @@ const RuleSetFilter: React.FC<RuleSetFilterProps> = ({
   const markets: (Market | 'All')[] = ['All', 'Forex', 'Crypto', 'Indices'];
   const statuses: RuleStatus[] = ['All', 'On', 'Off'];
   
+  const handleMarketToggle = (market: Market | 'All') => {
+    if (market === 'All') {
+      // Toggle behavior for "All" - if currently selected, deselect
+      // If not selected, select and deselect others
+      onMarketChange(selectedMarket === 'All' ? 'Forex' : 'All');
+    } else {
+      onMarketChange(market);
+    }
+  };
+  
   return (
-    <div className="flex flex-wrap justify-between gap-4 py-4 px-6 border-b bg-background">
+    <div className="sticky top-0 z-10 flex flex-wrap justify-between gap-4 py-4 px-6 border-b bg-background">
       <div className="flex flex-wrap gap-2 items-center">
         <span className="text-sm font-medium">Markets:</span>
         {markets.map((market) => (
@@ -29,7 +39,7 @@ const RuleSetFilter: React.FC<RuleSetFilterProps> = ({
             key={market} 
             market={market} 
             selected={selectedMarket === market}
-            onClick={() => onMarketChange(market)}
+            onClick={() => handleMarketToggle(market)}
           />
         ))}
       </div>
