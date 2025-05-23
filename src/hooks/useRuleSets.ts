@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { fetchRuleSets, updateRuleSet, deleteRuleSet } from '@/lib/api/rule-sets';
 import { supabase } from '@/integrations/supabase/client';
 import { CompleteRuleSet } from '@/types';
+import { SubRule } from '@/types/database';
 import { transformToCompleteRuleSet } from '@/lib/utils/ruleSetTransformer';
 
 export const useRuleSets = () => {
@@ -27,15 +28,21 @@ export const useRuleSets = () => {
       
       // Transform rule sets with sub-rules
       const ruleSetPromises = ruleSetData.map(async (ruleSet) => {
-        const { data: subRules } = await supabase
+        const { data: subRulesData } = await supabase
           .from('sub_rules')
           .select('*')
           .eq('rule_set_id', ruleSet.id)
           .eq('is_enabled', true);
         
-        console.log(`Sub-rules for ${ruleSet.name}:`, subRules);
+        console.log(`Sub-rules for ${ruleSet.name}:`, subRulesData);
         
-        return transformToCompleteRuleSet(ruleSet, subRules || []);
+        // Transform the data to match our SubRule interface
+        const subRules: SubRule[] = (subRulesData || []).map(rule => ({
+          ...rule,
+          configuration: rule.configuration as Record<string, any>
+        }));
+        
+        return transformToCompleteRuleSet(ruleSet, subRules);
       });
       
       const completeRuleSets = await Promise.all(ruleSetPromises);
