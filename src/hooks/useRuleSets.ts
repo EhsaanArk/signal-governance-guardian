@@ -35,8 +35,7 @@ export const useRuleSets = () => {
         const { data: subRulesData } = await supabase
           .from('sub_rules')
           .select('*')
-          .eq('rule_set_id', ruleSet.id)
-          .eq('is_enabled', true);
+          .eq('rule_set_id', ruleSet.id);
         
         console.log(`Sub-rules for ${ruleSet.name}:`, subRulesData);
         
@@ -153,9 +152,30 @@ export const useRuleSets = () => {
     }
   };
   
-  // Load rule sets on mount
+  // Load rule sets on mount and set up real-time updates
   useEffect(() => {
     loadRuleSets();
+    
+    // Set up real-time subscription for breach events
+    const channel = supabase
+      .channel('breach-events-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'breach_events'
+        },
+        () => {
+          console.log('Breach event changed, refreshing rule sets...');
+          loadRuleSets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   
   return {
