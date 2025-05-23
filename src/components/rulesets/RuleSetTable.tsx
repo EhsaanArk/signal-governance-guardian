@@ -52,7 +52,6 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
     onDelete(deleteIds);
     setSelectedRuleSets(prev => prev.filter(id => !deleteIds.includes(id)));
     setDeleteDialogOpen(false);
-    toast.success(`${deleteIds.length} rule set(s) deleted successfully`);
   };
   
   const handleSelectAll = (checked: boolean) => {
@@ -77,9 +76,12 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
     handleDeleteDialog(selectedRuleSets);
   };
 
-  if (ruleSets.length === 0) {
+  // Show empty state if no rule sets
+  if (!ruleSets || ruleSets.length === 0) {
     return <EmptyState onCreateNew={() => navigate('/admin/rulesets/create')} />;
   }
+
+  console.log('Rendering table with rule sets:', ruleSets);
   
   return (
     <>

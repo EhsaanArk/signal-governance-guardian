@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { fetchRuleSets, updateRuleSet, deleteRuleSet } from '@/lib/api/rule-sets';
@@ -32,10 +33,17 @@ export const useRuleSets = () => {
       
       // Transform rule sets with sub-rules and breach counts
       const ruleSetPromises = ruleSetData.map(async (ruleSet) => {
-        const { data: subRulesData } = await supabase
+        console.log(`Fetching sub-rules for rule set: ${ruleSet.name}`);
+        
+        const { data: subRulesData, error: subRulesError } = await supabase
           .from('sub_rules')
           .select('*')
           .eq('rule_set_id', ruleSet.id);
+        
+        if (subRulesError) {
+          console.error(`Error fetching sub-rules for ${ruleSet.name}:`, subRulesError);
+          return null;
+        }
         
         console.log(`Sub-rules for ${ruleSet.name}:`, subRulesData);
         
@@ -51,7 +59,7 @@ export const useRuleSets = () => {
         return transformToCompleteRuleSet(ruleSet, subRules, breaches24h);
       });
       
-      const completeRuleSets = await Promise.all(ruleSetPromises);
+      const completeRuleSets = (await Promise.all(ruleSetPromises)).filter(Boolean) as CompleteRuleSet[];
       console.log('Complete rule sets:', completeRuleSets);
       setRuleSets(completeRuleSets);
       
@@ -117,6 +125,24 @@ export const useRuleSets = () => {
   
   const handleDelete = async (ids: string[]) => {
     try {
+      // First, check if any of these rule sets have associated breach events
+      const { data: breachEvents } = await supabase
+        .from('breach_events')
+        .select('rule_set_id')
+        .in('rule_set_id', ids);
+      
+      if (breachEvents && breachEvents.length > 0) {
+        const affectedRuleSets = [...new Set(breachEvents.map(b => b.rule_set_id))];
+        const ruleSetNames = ruleSets
+          .filter(rs => affectedRuleSets.includes(rs.id))
+          .map(rs => rs.name)
+          .join(', ');
+        
+        toast.error(`Cannot delete rule sets (${ruleSetNames}) because they have associated breach events. Delete the breach events first.`);
+        return;
+      }
+      
+      // If no breach events, proceed with deletion
       for (const id of ids) {
         const { error } = await deleteRuleSet(id);
         if (error) throw error;
@@ -156,25 +182,37 @@ export const useRuleSets = () => {
   useEffect(() => {
     loadRuleSets();
     
-    // Set up real-time subscription for breach events
-    const channel = supabase
-      .channel('breach-events-changes')
+    // Set up real-time subscription for rule sets changes
+    const ruleSetChannel = supabase
+      .channel('rule-sets-changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'breach_events'
+          table: 'rule_sets'
         },
         () => {
-          console.log('Breach event changed, refreshing rule sets...');
+          console.log('Rule set changed, refreshing...');
+          loadRuleSets();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sub_rules'
+        },
+        () => {
+          console.log('Sub rule changed, refreshing...');
           loadRuleSets();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ruleSetChannel);
     };
   }, []);
   
