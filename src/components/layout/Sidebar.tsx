@@ -3,6 +3,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BarChart2, FileText, GitBranch, Settings, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const SidebarItem = ({ 
   to, 
@@ -31,6 +32,30 @@ const SidebarItem = ({
   );
 };
 
+const DisabledSidebarItem = ({ 
+  icon: Icon, 
+  label, 
+  tooltip 
+}: { 
+  icon: React.ElementType; 
+  label: string; 
+  tooltip: string;
+}) => {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-md text-muted-foreground cursor-not-allowed">
+          <Icon className="h-5 w-5" />
+          <span>{label}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>
+        <p>{tooltip}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+};
+
 const Sidebar = () => {
   const location = useLocation();
   
@@ -51,11 +76,10 @@ const Sidebar = () => {
             label="Dashboard" 
             active={isActive('/admin/dashboard')} 
           />
-          <SidebarItem 
-            to="/admin/providers" 
+          <DisabledSidebarItem 
             icon={FileText} 
             label="Providers" 
-            active={isActive('/admin/providers')} 
+            tooltip="Coming Soon"
           />
           <div className="relative py-3">
             <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
