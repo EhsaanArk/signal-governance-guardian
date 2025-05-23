@@ -21,6 +21,7 @@ const mockRuleSets: CompleteRuleSet[] = [
     is_active: true,
     created_at: '2025-05-17T10:00:00Z',
     updated_at: '2025-05-18T15:30:00Z',
+    created_by: undefined,
     enabledRules: {
       coolingOff: true,
       sameDirectionGuard: true,
@@ -42,6 +43,7 @@ const mockRuleSets: CompleteRuleSet[] = [
     is_active: true,
     created_at: '2025-05-15T10:00:00Z',
     updated_at: '2025-05-18T14:30:00Z',
+    created_by: undefined,
     enabledRules: {
       coolingOff: true,
       sameDirectionGuard: true,
@@ -63,6 +65,7 @@ const mockRuleSets: CompleteRuleSet[] = [
     is_active: false,
     created_at: '2025-05-14T10:00:00Z',
     updated_at: '2025-05-16T11:30:00Z',
+    created_by: undefined,
     enabledRules: {
       coolingOff: true,
       sameDirectionGuard: false,
@@ -90,7 +93,7 @@ const RuleSetsPage = () => {
     const filtered = ruleSets.filter(ruleSet => {
       const marketMatch = 
         selectedMarket === 'All' || 
-        ruleSet.markets.includes(selectedMarket);
+        ruleSet.markets.includes(selectedMarket as Market);
       
       const statusMatch = 
         selectedStatus === 'All' || 
@@ -133,7 +136,7 @@ const RuleSetsPage = () => {
     setRuleSets(prev => 
       prev.map(rs => 
         rs.id === id 
-          ? { ...rs, status: enabled, updated_at: new Date().toISOString() } 
+          ? { ...rs, status: enabled, is_active: enabled, updated_at: new Date().toISOString() } 
           : rs
       )
     );

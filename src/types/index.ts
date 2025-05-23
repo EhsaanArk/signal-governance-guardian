@@ -76,7 +76,17 @@ export interface PositivePipCancelLimitRule {
 }
 
 // Extended rule set interface that includes frontend-specific properties
-export interface CompleteRuleSet extends RuleSet {
+export interface CompleteRuleSet {
+  // Database properties
+  id: string;
+  name: string;
+  description?: string;
+  markets: Market[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by?: string;
+  
   // Frontend-specific computed properties
   enabledRules: {
     coolingOff: boolean;

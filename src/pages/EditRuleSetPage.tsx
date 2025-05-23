@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -26,6 +25,7 @@ const mockCompleteRuleSet: CompleteRuleSet = {
   is_active: true,
   created_at: '2025-05-15T10:00:00Z',
   updated_at: '2025-05-18T14:30:00Z',
+  created_by: undefined,
   enabledRules: {
     coolingOff: true,
     sameDirectionGuard: true,
@@ -151,7 +151,7 @@ const EditRuleSetPage: React.FC = () => {
   return (
     <MainLayout>
       <Header 
-        title={`Edit Rule Set: ${ruleSet.name}`}
+        title={`Edit Rule Set: ${ruleSet?.name}`}
         subtitle={`Step ${currentStep} of 2: ${currentStep === 1 ? 'Basics & Scope' : 'Configure Sub-Rules'}`}
       />
       
@@ -160,9 +160,9 @@ const EditRuleSetPage: React.FC = () => {
           {currentStep === 1 ? (
             <Step1Basics
               initialData={{
-                name: ruleSet.name,
-                description: ruleSet.description,
-                markets: ruleSet.markets
+                name: ruleSet?.name,
+                description: ruleSet?.description,
+                markets: ruleSet?.markets
               }}
               onNext={handleStep1Next}
               onCancel={handleCancel}
@@ -170,10 +170,10 @@ const EditRuleSetPage: React.FC = () => {
           ) : (
             <Step2Rules
               initialData={{
-                coolingOff: ruleSet.coolingOff,
-                sameDirectionGuard: ruleSet.sameDirectionGuard,
-                maxActiveTrades: ruleSet.maxActiveTrades,
-                positivePipCancelLimit: ruleSet.positivePipCancelLimit
+                coolingOff: ruleSet?.coolingOff as CoolingOffRule,
+                sameDirectionGuard: ruleSet?.sameDirectionGuard as SameDirectionGuardRule,
+                maxActiveTrades: ruleSet?.maxActiveTrades as MaxActiveTradesRule,
+                positivePipCancelLimit: ruleSet?.positivePipCancelLimit as PositivePipCancelLimitRule
               }}
               isEditing={true}
               onBack={() => setCurrentStep(1)}

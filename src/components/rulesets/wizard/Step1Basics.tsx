@@ -48,7 +48,7 @@ const Step1Basics: React.FC<Step1BasicsProps> = ({ initialData, onNext, onCancel
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
-      markets: initialData?.markets?.filter(m => m !== 'All') as ('Forex' | 'Crypto' | 'Indices')[] || [],
+      markets: initialData?.markets || [],
     },
   });
   

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Market } from '@/types/database';
+import { Market } from '@/types';
 
 interface MarketChipProps {
   market: Market | 'All';
