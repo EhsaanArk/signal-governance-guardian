@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { DatePickerWithRange } from '../common/DatePickerWithRange';
+import { EnhancedDatePicker } from '../common/EnhancedDatePicker';
 import MarketChip from '../common/MarketChip';
 import { Market } from '@/types/database';
 import { DateRange } from 'react-day-picker';
@@ -88,7 +88,7 @@ const BreachFilter: React.FC<BreachFilterProps> = ({
         </div>
         
         <div className="flex-1">
-          <DatePickerWithRange 
+          <EnhancedDatePicker 
             date={dateRange}
             onDateChange={onDateRangeChange}
           />

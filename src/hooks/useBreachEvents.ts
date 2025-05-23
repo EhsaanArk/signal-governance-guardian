@@ -1,11 +1,9 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { subDays } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { useQuery } from '@tanstack/react-query';
 import { Market } from '@/types/database';
-import { BreachEventFilters } from '@/types/breach';
 import { BreachEventsService } from '@/lib/api/breach-events-service';
 import { BreachFilters } from '@/utils/breach-filters';
 import { BreachTransformer } from '@/utils/breach-transformer';
@@ -16,8 +14,8 @@ export const useBreachEvents = () => {
   const [providerSearch, setProviderSearch] = useState('');
   const [selectedRuleSet, setSelectedRuleSet] = useState('all');
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 90),
-    to: new Date()
+    from: new Date(2020, 0, 1), // Wide default range from 2020
+    to: new Date(2030, 11, 31)  // to 2030 to catch all data including future dates
   });
 
   const breachService = new BreachEventsService();
@@ -25,7 +23,7 @@ export const useBreachEvents = () => {
   const { data: breaches = [], isLoading, refetch } = useQuery({
     queryKey: ['breachEvents', selectedMarket, providerSearch, selectedRuleSet, dateRange],
     queryFn: async () => {
-      console.log('=== FETCHING BREACH EVENTS - SIMPLIFIED APPROACH ===');
+      console.log('=== FETCHING BREACH EVENTS - ENHANCED DATE FILTERING ===');
       console.log('Applied filters:', {
         selectedMarket,
         providerSearch,
@@ -45,12 +43,15 @@ export const useBreachEvents = () => {
           return [];
         }
 
+        console.log(`Found ${allBreaches.length} total breach events in database`);
+        console.log('Sample dates from breach events:', allBreaches.slice(0, 3).map(b => b.occurred_at));
+
         // Step 2: Apply filters
         let filteredBreaches = BreachFilters.applyDateRangeFilter(allBreaches, dateRange);
         filteredBreaches = BreachFilters.applyMarketFilter(filteredBreaches, selectedMarket);
         filteredBreaches = BreachFilters.applyRuleSetFilter(filteredBreaches, selectedRuleSet);
 
-        console.log('Filtered breach events:', filteredBreaches);
+        console.log(`After filtering: ${filteredBreaches.length} breach events`);
 
         if (filteredBreaches.length === 0) {
           console.log('No breach events match the current filters');
@@ -76,7 +77,7 @@ export const useBreachEvents = () => {
         // Step 5: Apply provider search filter
         transformedData = BreachFilters.applyProviderSearchFilter(transformedData, providerSearch);
 
-        console.log('Final transformed breach events:', transformedData);
+        console.log('Final transformed breach events:', transformedData.length);
         return transformedData;
 
       } catch (error) {

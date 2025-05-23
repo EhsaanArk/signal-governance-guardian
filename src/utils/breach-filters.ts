@@ -4,18 +4,42 @@ import { BreachEventFilters, RawBreachEvent } from '@/types/breach';
 export class BreachFilters {
   static applyDateRangeFilter(breaches: RawBreachEvent[], dateRange: BreachEventFilters['dateRange']): RawBreachEvent[] {
     if (!dateRange?.from && !dateRange?.to) {
+      console.log('No date range specified, returning all breaches');
       return breaches;
     }
 
     const beforeDateFilter = breaches.length;
     const filtered = breaches.filter(breach => {
       const breachDate = new Date(breach.occurred_at);
-      const fromMatch = !dateRange?.from || breachDate >= dateRange.from;
-      const toMatch = !dateRange?.to || breachDate <= new Date(dateRange.to.getTime() + 24 * 60 * 60 * 1000);
+      
+      // Handle invalid dates
+      if (isNaN(breachDate.getTime())) {
+        console.warn(`Invalid date found in breach ${breach.id}: ${breach.occurred_at}`);
+        return false;
+      }
+      
+      let fromMatch = true;
+      let toMatch = true;
+      
+      if (dateRange?.from) {
+        fromMatch = breachDate >= dateRange.from;
+      }
+      
+      if (dateRange?.to) {
+        // Include the entire end date by adding 23:59:59
+        const endOfDay = new Date(dateRange.to);
+        endOfDay.setHours(23, 59, 59, 999);
+        toMatch = breachDate <= endOfDay;
+      }
+      
       return fromMatch && toMatch;
     });
     
-    console.log(`Date filter: ${beforeDateFilter} -> ${filtered.length} events`);
+    console.log(`Date filter applied: ${beforeDateFilter} -> ${filtered.length} events`);
+    if (dateRange?.from || dateRange?.to) {
+      console.log(`Date range: ${dateRange?.from?.toISOString()} to ${dateRange?.to?.toISOString()}`);
+    }
+    
     return filtered;
   }
 
