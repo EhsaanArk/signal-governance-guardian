@@ -1,4 +1,5 @@
 
+
 // Re-export database types for backward compatibility
 export type { Market, RuleSet, BreachEvent, ActiveCooldown } from './database';
 
@@ -103,3 +104,4 @@ export interface CompleteRuleSet {
   maxActiveTrades: MaxActiveTradesRule;
   positivePipCancelLimit: PositivePipCancelLimitRule;
 }
+
