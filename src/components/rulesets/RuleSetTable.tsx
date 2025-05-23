@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -34,10 +35,10 @@ import { toast } from 'sonner';
 import StatusToggle from '../common/StatusToggle';
 import MarketChip from '../common/MarketChip';
 import BreachBadge from '../common/BreachBadge';
-import { RuleSet } from '@/types';
+import { CompleteRuleSet } from '@/types';
 
 interface RuleSetTableProps {
-  ruleSets: RuleSet[];
+  ruleSets: CompleteRuleSet[];
   onDuplicate: (id: string) => void;
   onDelete: (ids: string[]) => void;
   onStatusChange: (id: string, enabled: boolean) => void;
@@ -99,7 +100,7 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
     setSelectedRuleSets([]);
   };
 
-  const renderRuleIcons = (ruleSet: RuleSet) => {
+  const renderRuleIcons = (ruleSet: CompleteRuleSet) => {
     return (
       <div className="flex space-x-2">
         {ruleSet.enabledRules.coolingOff && (

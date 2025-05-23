@@ -1,3 +1,4 @@
+
 // Re-export database types for backward compatibility
 export type { Market, RuleSet, BreachEvent, ActiveCooldown } from './database';
 
@@ -74,7 +75,19 @@ export interface PositivePipCancelLimitRule {
   suspensionDuration: number;
 }
 
+// Extended rule set interface that includes frontend-specific properties
 export interface CompleteRuleSet extends RuleSet {
+  // Frontend-specific computed properties
+  enabledRules: {
+    coolingOff: boolean;
+    sameDirectionGuard: boolean;
+    maxActiveTrades: boolean;
+    positivePipCancelLimit: boolean;
+  };
+  breaches24h: number;
+  status: boolean; // Maps to is_active from database
+  
+  // Rule configurations
   coolingOff: CoolingOffRule;
   sameDirectionGuard: SameDirectionGuardRule;
   maxActiveTrades: MaxActiveTradesRule;

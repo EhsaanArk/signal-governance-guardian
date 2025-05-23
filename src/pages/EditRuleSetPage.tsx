@@ -10,7 +10,6 @@ import Step2Rules from '@/components/rulesets/wizard/Step2Rules';
 
 import {
   Market, 
-  RuleSet,
   CompleteRuleSet,
   CoolingOffRule, 
   SameDirectionGuardRule, 
@@ -24,6 +23,9 @@ const mockCompleteRuleSet: CompleteRuleSet = {
   name: 'Crypto Enhanced Guard',
   description: 'Enhanced protection for volatile crypto markets',
   markets: ['Crypto'],
+  is_active: true,
+  created_at: '2025-05-15T10:00:00Z',
+  updated_at: '2025-05-18T14:30:00Z',
   enabledRules: {
     coolingOff: true,
     sameDirectionGuard: true,
@@ -32,8 +34,6 @@ const mockCompleteRuleSet: CompleteRuleSet = {
   },
   breaches24h: 12,
   status: true,
-  createdAt: '2025-05-15T10:00:00Z',
-  updatedAt: '2025-05-18T14:30:00Z',
   
   // Rule details
   coolingOff: {
@@ -115,7 +115,7 @@ const EditRuleSetPage: React.FC = () => {
           maxActiveTrades: data.maxActiveTrades.enabled,
           positivePipCancelLimit: data.positivePipCancelLimit.enabled
         },
-        updatedAt: new Date().toISOString()
+        updated_at: new Date().toISOString()
       };
     });
     

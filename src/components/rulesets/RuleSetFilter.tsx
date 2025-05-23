@@ -5,9 +5,9 @@ import MarketChip from '../common/MarketChip';
 import { Market, RuleStatus } from '@/types';
 
 interface RuleSetFilterProps {
-  selectedMarket: Market;
+  selectedMarket: Market | 'All';
   selectedStatus: RuleStatus;
-  onMarketChange: (market: Market) => void;
+  onMarketChange: (market: Market | 'All') => void;
   onStatusChange: (status: RuleStatus) => void;
 }
 
@@ -17,7 +17,7 @@ const RuleSetFilter: React.FC<RuleSetFilterProps> = ({
   onMarketChange,
   onStatusChange
 }) => {
-  const markets: Market[] = ['All', 'Forex', 'Crypto', 'Indices'];
+  const markets: (Market | 'All')[] = ['All', 'Forex', 'Crypto', 'Indices'];
   const statuses: RuleStatus[] = ['All', 'On', 'Off'];
   
   return (

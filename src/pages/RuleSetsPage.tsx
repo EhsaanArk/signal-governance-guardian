@@ -9,15 +9,18 @@ import Header from '@/components/layout/Header';
 import RuleSetTable from '@/components/rulesets/RuleSetTable';
 import RuleSetFilter from '@/components/rulesets/RuleSetFilter';
 
-import { Market, RuleStatus, RuleSet } from '@/types';
+import { Market, RuleStatus, CompleteRuleSet } from '@/types';
 
 // Mock data for rule sets
-const mockRuleSets: RuleSet[] = [
+const mockRuleSets: CompleteRuleSet[] = [
   {
     id: '1',
     name: 'Forex Standard Protection',
     description: 'Standard protection rules for forex traders',
     markets: ['Forex'],
+    is_active: true,
+    created_at: '2025-05-17T10:00:00Z',
+    updated_at: '2025-05-18T15:30:00Z',
     enabledRules: {
       coolingOff: true,
       sameDirectionGuard: true,
@@ -26,14 +29,19 @@ const mockRuleSets: RuleSet[] = [
     },
     breaches24h: 5,
     status: true,
-    createdAt: '2025-05-17T10:00:00Z',
-    updatedAt: '2025-05-18T15:30:00Z'
+    coolingOff: { enabled: true, tiers: [], metric: 'SLCount' },
+    sameDirectionGuard: { enabled: true, pairScope: 'All', directions: { long: true, short: true } },
+    maxActiveTrades: { enabled: false, baseCap: 3, incrementPerWin: 1, hardCap: null, resetPolicy: 'Never' },
+    positivePipCancelLimit: { enabled: false, plBand: { from: 0, to: 5 }, minHoldTime: 5, maxCancels: 2, window: 'UTCDay', suspensionDuration: 24 }
   },
   {
     id: '2',
     name: 'Crypto Enhanced Guard',
     description: 'Enhanced protection for volatile crypto markets',
     markets: ['Crypto'],
+    is_active: true,
+    created_at: '2025-05-15T10:00:00Z',
+    updated_at: '2025-05-18T14:30:00Z',
     enabledRules: {
       coolingOff: true,
       sameDirectionGuard: true,
@@ -42,14 +50,19 @@ const mockRuleSets: RuleSet[] = [
     },
     breaches24h: 12,
     status: true,
-    createdAt: '2025-05-15T10:00:00Z',
-    updatedAt: '2025-05-18T14:30:00Z'
+    coolingOff: { enabled: true, tiers: [], metric: 'SLCount' },
+    sameDirectionGuard: { enabled: true, pairScope: 'All', directions: { long: true, short: true } },
+    maxActiveTrades: { enabled: true, baseCap: 2, incrementPerWin: 1, hardCap: 8, resetPolicy: 'Monthly' },
+    positivePipCancelLimit: { enabled: true, plBand: { from: 0, to: 10 }, minHoldTime: 10, maxCancels: 3, window: 'UTCDay', suspensionDuration: 12 }
   },
   {
     id: '3',
     name: 'Multi-Market Basic',
     description: 'Basic rules applicable to all market types',
     markets: ['Forex', 'Crypto', 'Indices'],
+    is_active: false,
+    created_at: '2025-05-14T10:00:00Z',
+    updated_at: '2025-05-16T11:30:00Z',
     enabledRules: {
       coolingOff: true,
       sameDirectionGuard: false,
@@ -58,17 +71,19 @@ const mockRuleSets: RuleSet[] = [
     },
     breaches24h: 8,
     status: false,
-    createdAt: '2025-05-14T10:00:00Z',
-    updatedAt: '2025-05-16T11:30:00Z'
+    coolingOff: { enabled: true, tiers: [], metric: 'SLCount' },
+    sameDirectionGuard: { enabled: false, pairScope: 'All', directions: { long: true, short: true } },
+    maxActiveTrades: { enabled: true, baseCap: 5, incrementPerWin: 2, hardCap: 15, resetPolicy: 'OnFirstSL' },
+    positivePipCancelLimit: { enabled: false, plBand: { from: 2, to: 15 }, minHoldTime: 5, maxCancels: 2, window: 'UTCDay', suspensionDuration: 24 }
   },
 ];
 
 const RuleSetsPage = () => {
   const navigate = useNavigate();
-  const [ruleSets, setRuleSets] = useState<RuleSet[]>(mockRuleSets);
-  const [selectedMarket, setSelectedMarket] = useState<Market>('All');
+  const [ruleSets, setRuleSets] = useState<CompleteRuleSet[]>(mockRuleSets);
+  const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
   const [selectedStatus, setSelectedStatus] = useState<RuleStatus>('All');
-  const [filteredRuleSets, setFilteredRuleSets] = useState<RuleSet[]>(mockRuleSets);
+  const [filteredRuleSets, setFilteredRuleSets] = useState<CompleteRuleSet[]>(mockRuleSets);
   
   useEffect(() => {
     // Filter rule sets based on selected market and status
@@ -100,8 +115,8 @@ const RuleSetsPage = () => {
         ...ruleSetToDuplicate,
         id: uuidv4(),
         name: `${ruleSetToDuplicate.name} (copy)`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         breaches24h: 0
       };
       
@@ -118,13 +133,13 @@ const RuleSetsPage = () => {
     setRuleSets(prev => 
       prev.map(rs => 
         rs.id === id 
-          ? { ...rs, status: enabled, updatedAt: new Date().toISOString() } 
+          ? { ...rs, status: enabled, updated_at: new Date().toISOString() } 
           : rs
       )
     );
   };
   
-  const handleMarketChange = (market: Market) => {
+  const handleMarketChange = (market: Market | 'All') => {
     setSelectedMarket(market);
   };
   
