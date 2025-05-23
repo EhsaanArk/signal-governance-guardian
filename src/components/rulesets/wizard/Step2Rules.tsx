@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Accordion,
@@ -39,6 +38,7 @@ interface Step2RulesProps {
   }) => void;
   onCancel: () => void;
   isEditing?: boolean;
+  isLoading?: boolean;
 }
 
 const Step2Rules: React.FC<Step2RulesProps> = ({ 
@@ -46,7 +46,8 @@ const Step2Rules: React.FC<Step2RulesProps> = ({
   onBack, 
   onSave, 
   onCancel,
-  isEditing = false 
+  isEditing = false,
+  isLoading = false
 }) => {
   const [coolingOff, setCoolingOff] = useState<CoolingOffRuleType>(
     initialData?.coolingOff || {
@@ -195,18 +196,18 @@ const Step2Rules: React.FC<Step2RulesProps> = ({
         </Accordion>
         
         <div className="flex justify-between mt-8">
-          <Button variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack} disabled={isLoading}>
             ← Back
           </Button>
           <div className="space-x-2">
-            <Button variant="outline" onClick={onCancel}>
+            <Button variant="outline" onClick={onCancel} disabled={isLoading}>
               Cancel
             </Button>
             <Button 
               onClick={handleSave} 
-              disabled={!isAnyRuleEnabled}
+              disabled={!isAnyRuleEnabled || isLoading}
             >
-              {isEditing ? 'Save Rule Set' : 'Create Rule Set'}
+              {isLoading ? 'Creating...' : (isEditing ? 'Save Rule Set' : 'Create Rule Set')}
             </Button>
           </div>
         </div>
