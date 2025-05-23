@@ -8,7 +8,7 @@ import CooldownStats from '@/components/cooldowns/CooldownStats';
 import CooldownList from '@/components/cooldowns/CooldownList';
 
 import { supabase } from '@/integrations/supabase/client';
-import { endCooldown } from '@/lib/api/cooldowns';
+import { endCooldown } from '@/lib/api/breach-events';
 import { toast } from 'sonner';
 
 const CoolDownsPage: React.FC = () => {
