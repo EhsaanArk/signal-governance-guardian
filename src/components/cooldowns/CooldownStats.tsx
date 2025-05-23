@@ -2,10 +2,18 @@
 import React from 'react';
 import { Timer, AlertOctagon, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CoolDownStats } from '@/types';
+
+interface CoolDownStatsProps {
+  providersInCooldown: number;
+  avgRemainingTime: string;
+  topBreachedRuleSet: {
+    name: string;
+    count: number;
+  };
+}
 
 interface CooldownStatsProps {
-  stats: CoolDownStats;
+  stats: CoolDownStatsProps;
 }
 
 const CooldownStats: React.FC<CooldownStatsProps> = ({ stats }) => {

@@ -7,34 +7,24 @@ import Header from '@/components/layout/Header';
 import CooldownStats from '@/components/cooldowns/CooldownStats';
 import CooldownList from '@/components/cooldowns/CooldownList';
 
-import { supabase } from '@/integrations/supabase/client';
+import { fetchActiveCooldowns, getCooldownStats } from '@/lib/api/cooldowns';
 import { endCooldown } from '@/lib/api/cooldowns';
 import { toast } from 'sonner';
 
 const CoolDownsPage: React.FC = () => {
-  // Fetch active cooldowns from database
+  // Fetch active cooldowns using the working API function
   const { data: cooldowns = [], isLoading, refetch } = useQuery({
     queryKey: ['activeCooldowns'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('active_cooldowns')
-        .select(`
-          id,
-          provider_id,
-          market,
-          started_at,
-          expires_at,
-          status,
-          signal_providers!provider_id(provider_name),
-          rule_sets!rule_set_id(id, name)
-        `)
-        .eq('status', 'active')
-        .order('started_at', { ascending: false });
-
+      console.log('Fetching cooldowns via API...');
+      const { data, error } = await fetchActiveCooldowns();
+      
       if (error) {
         console.error('Error fetching cooldowns:', error);
         throw error;
       }
+
+      console.log('Cooldowns data received:', data);
 
       // Transform data to match component expectations
       return data.map(cooldown => {
@@ -47,7 +37,9 @@ const CoolDownsPage: React.FC = () => {
         const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
         
         let remainingTime = '';
-        if (remainingHours > 24) {
+        if (remainingMs <= 0) {
+          remainingTime = 'Expired';
+        } else if (remainingHours > 24) {
           const days = Math.floor(remainingHours / 24);
           const hours = remainingHours % 24;
           remainingTime = `${days}d ${hours}h`;
@@ -56,15 +48,15 @@ const CoolDownsPage: React.FC = () => {
         } else if (remainingMinutes > 0) {
           remainingTime = `${remainingMinutes}m`;
         } else {
-          remainingTime = 'Expired';
+          remainingTime = 'Less than 1m';
         }
 
         return {
           id: cooldown.id,
-          provider: cooldown.signal_providers?.provider_name || 'Unknown Provider',
+          provider: cooldown.signal_provider?.provider_name || 'Unknown Provider',
           market: cooldown.market,
-          ruleSetId: cooldown.rule_sets?.id || '',
-          ruleSetName: cooldown.rule_sets?.name || 'Unknown Rule Set',
+          ruleSetId: cooldown.rule_set?.id || '',
+          ruleSetName: cooldown.rule_set?.name || 'Unknown Rule Set',
           startedAt: cooldown.started_at,
           endsAt: cooldown.expires_at,
           remainingTime
@@ -73,46 +65,18 @@ const CoolDownsPage: React.FC = () => {
     }
   });
 
-  // Calculate stats from real data
-  const stats = React.useMemo(() => {
-    const providersInCooldown = cooldowns.length;
-    
-    // Calculate average remaining time
-    const totalRemainingMs = cooldowns.reduce((sum, cooldown) => {
-      const now = new Date();
-      const expiresAt = new Date(cooldown.endsAt);
-      const remaining = Math.max(0, expiresAt.getTime() - now.getTime());
-      return sum + remaining;
-    }, 0);
-    
-    const avgRemainingMs = providersInCooldown > 0 ? totalRemainingMs / providersInCooldown : 0;
-    const avgHours = Math.floor(avgRemainingMs / (1000 * 60 * 60));
-    const avgMinutes = Math.floor((avgRemainingMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    let avgRemainingTime = '0h 0m';
-    if (avgHours > 0) {
-      avgRemainingTime = `${avgHours}h ${avgMinutes}m`;
-    } else if (avgMinutes > 0) {
-      avgRemainingTime = `${avgMinutes}m`;
-    }
+  // Fetch cooldown stats using the API function
+  const { data: stats } = useQuery({
+    queryKey: ['cooldownStats'],
+    queryFn: getCooldownStats
+  });
 
-    // Find most common rule set
-    const ruleSetCounts: Record<string, number> = {};
-    cooldowns.forEach(cooldown => {
-      ruleSetCounts[cooldown.ruleSetName] = (ruleSetCounts[cooldown.ruleSetName] || 0) + 1;
-    });
-    
-    const topRuleSet = Object.entries(ruleSetCounts).reduce(
-      (max, [name, count]) => count > max.count ? { name, count } : max,
-      { name: 'None', count: 0 }
-    );
-
-    return {
-      providersInCooldown,
-      avgRemainingTime,
-      topBreachedRuleSet: topRuleSet
-    };
-  }, [cooldowns]);
+  // Default stats if API call fails
+  const defaultStats = {
+    providersInCooldown: cooldowns.length,
+    avgRemainingTime: '0h 0m',
+    topBreachedRuleSet: { name: 'N/A', count: 0 }
+  };
   
   const handleEndCooldown = async (id: string, reason: string) => {
     try {
@@ -146,7 +110,7 @@ const CoolDownsPage: React.FC = () => {
       <Header title="Signal Governance – Active Cool-downs" />
       
       <div className="p-6 space-y-6">
-        <CooldownStats stats={stats} />
+        <CooldownStats stats={stats || defaultStats} />
         
         <div className="border rounded-lg overflow-hidden">
           <div className="bg-muted/20 px-4 py-3 border-b">
