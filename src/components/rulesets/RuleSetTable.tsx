@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -86,8 +85,7 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
     setSelectedRuleSets(checked ? ruleSets.map(rs => rs.id) : []);
   };
   
-  const handleSelectRow = (id: string, checked: boolean, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSelectRow = (id: string, checked: boolean) => {
     setSelectedRuleSets(prev => 
       checked 
         ? [...prev, id] 
@@ -200,9 +198,7 @@ const RuleSetTable: React.FC<RuleSetTableProps> = ({
                   <td onClick={(e) => e.stopPropagation()}>
                     <Checkbox 
                       checked={selectedRuleSets.includes(ruleSet.id)}
-                      onCheckedChange={(checked) => 
-                        handleSelectRow(ruleSet.id, !!checked, e as unknown as React.MouseEvent)
-                      }
+                      onCheckedChange={(checked) => handleSelectRow(ruleSet.id, !!checked)}
                       aria-label={`Select ${ruleSet.name}`}
                     />
                   </td>
