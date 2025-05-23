@@ -21,6 +21,20 @@ export async function fetchActiveCooldowns() {
   return { data: data || [], error: null };
 }
 
+export async function endCooldown(cooldownId: string, reason: string) {
+  const { data, error } = await supabase
+    .from('active_cooldowns')
+    .update({
+      status: 'ended_manually',
+      end_reason: reason,
+      ended_at: new Date().toISOString()
+    })
+    .eq('id', cooldownId)
+    .select();
+
+  return { data, error };
+}
+
 export async function getCooldownStats() {
   // Get count of providers in cooldown
   const { data: cooldownData, error: cooldownError } = await supabase

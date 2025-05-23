@@ -89,7 +89,7 @@ const BreachLogPage: React.FC = () => {
         action: breach.action_taken === 'signal_rejected' ? 'Rejected' : 
                 breach.action_taken === 'cooldown_triggered' ? 'Cooldown' : 
                 breach.action_taken === 'suspension_applied' ? 'Suspended' : 'Limited',
-        details: typeof breach.details === 'object' ? JSON.stringify(breach.details) : breach.details
+        details: typeof breach.details === 'object' ? JSON.stringify(breach.details) : String(breach.details || '')
       }));
 
       // Apply provider search filter
