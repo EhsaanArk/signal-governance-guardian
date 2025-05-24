@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,10 +35,7 @@ const DashboardTables = () => {
 
   const { data: recentBreaches, isLoading: breachesLoading } = useQuery<RecentBreach[]>({
     queryKey: ['recent-breaches', getApiDateParams()],
-    queryFn: () => {
-      const { startDate, endDate } = getApiDateParams();
-      return fetchRecentBreaches(10, startDate, endDate);
-    },
+    queryFn: () => fetchRecentBreaches(10),
     refetchInterval: 60000,
   });
 
