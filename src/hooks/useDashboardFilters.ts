@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DateRange } from 'react-day-picker';
@@ -103,17 +102,26 @@ export const useDashboardFilters = () => {
     return { timeRange, provider };
   });
 
-  // Invalidate all dashboard queries when filters change
-  const invalidateDashboardQueries = useCallback(() => {
-    console.log('🔄 Invalidating dashboard queries due to filter change');
-    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+  // Force immediate query invalidation when filters change
+  const forceRefreshQueries = useCallback(() => {
+    console.log('🔄 Force refreshing all dashboard queries');
+    
+    // Remove all cached dashboard data
+    queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
+    
+    // Invalidate with immediate refetch
+    queryClient.invalidateQueries({ 
+      queryKey: queryKeys.dashboard.all,
+      refetchType: 'active'
+    });
   }, [queryClient]);
 
   const updateFilters = useCallback((newFilters: Partial<DashboardFiltersState>) => {
     const updatedFilters = { ...filters, ...newFilters };
-    setFilters(updatedFilters);
-    
     console.log('🔄 Updating filters:', updatedFilters);
+    
+    // Update state immediately
+    setFilters(updatedFilters);
     
     // Update URL parameters
     const newSearchParams = new URLSearchParams(searchParams);
@@ -142,11 +150,11 @@ export const useDashboardFilters = () => {
     
     setSearchParams(newSearchParams);
     
-    // Invalidate queries after URL update
+    // Force immediate refresh of queries with new filters
     setTimeout(() => {
-      invalidateDashboardQueries();
+      forceRefreshQueries();
     }, 0);
-  }, [filters, searchParams, setSearchParams, invalidateDashboardQueries]);
+  }, [filters, searchParams, setSearchParams, forceRefreshQueries]);
 
   const setTimeRangePreset = useCallback((preset: TimeRangePreset) => {
     if (preset === 'custom') {
@@ -184,13 +192,18 @@ export const useDashboardFilters = () => {
   }, [filters.timeRange]);
 
   const getApiDateParams = useCallback(() => {
+    // Clean providerId to prevent serialization issues
+    const cleanProviderId = filters.provider.providerId === 'undefined' || !filters.provider.providerId 
+      ? undefined 
+      : filters.provider.providerId;
+    
     const params = {
       startDate: filters.timeRange.from.toISOString(),
       endDate: filters.timeRange.to.toISOString(),
-      providerId: filters.provider.providerId || undefined
+      providerId: cleanProviderId
     };
     
-    console.log('🌐 API date params:', params);
+    console.log('🌐 Clean API date params:', params);
     return params;
   }, [filters]);
 
@@ -219,6 +232,6 @@ export const useDashboardFilters = () => {
     getDisplayContext,
     isCustomTimeRange: filters.timeRange.preset === 'custom',
     isProviderFiltered: !!filters.provider.providerId,
-    invalidateDashboardQueries
+    invalidateDashboardQueries: forceRefreshQueries
   };
 };

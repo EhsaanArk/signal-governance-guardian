@@ -53,11 +53,18 @@ export class DashboardFiltersService {
       ...getDefaultDateRange('24h')
     };
     
-    return {
+    // Fix: Properly handle null/undefined providerId without serialization
+    const providerId = filters.provider?.providerId;
+    const cleanProviderId = providerId && providerId !== 'undefined' ? providerId : undefined;
+    
+    const params = {
       startDate: timeRange.from.toISOString(),
       endDate: timeRange.to.toISOString(),
-      providerId: filters.provider?.providerId || undefined
+      providerId: cleanProviderId
     };
+    
+    console.log('🌐 Clean API params:', params);
+    return params;
   }
 
   static getContextualTitle(baseTitle: string, context: FilterContext): string {
