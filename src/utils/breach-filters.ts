@@ -1,3 +1,4 @@
+
 import { BreachEventFilters, RawBreachEvent } from '@/types/breach';
 
 export class BreachFilters {
@@ -31,27 +32,17 @@ export class BreachFilters {
       let toMatch = true;
       
       if (dateRange?.from) {
-        // Convert to UTC for comparison
-        const fromUTC = new Date(Date.UTC(
-          dateRange.from.getFullYear(),
-          dateRange.from.getMonth(),
-          dateRange.from.getDate(),
-          0, 0, 0, 0
-        ));
-        fromMatch = breachDate >= fromUTC;
-        console.log(`  From check: ${breachDate.toISOString()} >= ${fromUTC.toISOString()} = ${fromMatch}`);
+        // Use the from date as-is (already set to start of day in the hook)
+        fromMatch = breachDate >= dateRange.from;
+        console.log(`  From check: ${breachDate.toISOString()} >= ${dateRange.from.toISOString()} = ${fromMatch}`);
       }
       
       if (dateRange?.to) {
-        // Convert to UTC for comparison and include the entire end date
-        const toUTC = new Date(Date.UTC(
-          dateRange.to.getFullYear(),
-          dateRange.to.getMonth(),
-          dateRange.to.getDate(),
-          23, 59, 59, 999
-        ));
-        toMatch = breachDate <= toUTC;
-        console.log(`  To check: ${breachDate.toISOString()} <= ${toUTC.toISOString()} = ${toMatch}`);
+        // Set the to date to end of day for inclusive filtering
+        const toEndOfDay = new Date(dateRange.to);
+        toEndOfDay.setHours(23, 59, 59, 999);
+        toMatch = breachDate <= toEndOfDay;
+        console.log(`  To check: ${breachDate.toISOString()} <= ${toEndOfDay.toISOString()} = ${toMatch}`);
       }
       
       const result = fromMatch && toMatch;

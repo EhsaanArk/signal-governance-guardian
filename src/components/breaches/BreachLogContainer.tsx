@@ -6,6 +6,7 @@ import BreachTable from './BreachTable';
 import { fetchRuleSets } from '@/lib/api/rule-sets';
 import { useBreachFilters } from '@/hooks/useBreachFilters';
 import { useBreachEventsWithFilters } from '@/hooks/useBreachEventsWithFilters';
+import { format } from 'date-fns';
 
 const BreachLogContainer: React.FC = () => {
   const {
@@ -37,6 +38,15 @@ const BreachLogContainer: React.FC = () => {
     name: rs.name
   }));
 
+  const getEmptyStateMessage = () => {
+    if (filters.dateRange?.from && filters.dateRange?.to) {
+      const fromDate = format(filters.dateRange.from, 'MMM dd, yyyy');
+      const toDate = format(filters.dateRange.to, 'MMM dd, yyyy');
+      return `No breaches found between ${fromDate} and ${toDate}. Try expanding the date range or adjusting other filters.`;
+    }
+    return "No breaches found for selected filters. Try adjusting the time range or clearing filters.";
+  };
+
   return (
     <>
       <BreachFilter
@@ -65,7 +75,7 @@ const BreachLogContainer: React.FC = () => {
           </div>
         ) : breaches.length === 0 ? (
           <div className="text-center py-10">
-            <p className="text-muted-foreground">No breaches found for selected filters.</p>
+            <p className="text-muted-foreground">{getEmptyStateMessage()}</p>
           </div>
         ) : (
           <BreachTable 

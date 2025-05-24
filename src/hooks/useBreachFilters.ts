@@ -17,19 +17,33 @@ export interface BreachFiltersState {
 
 const getDateRangeFromPreset = (preset: TimeRangePreset): DateRange => {
   const now = new Date();
-  const to = now;
   
   switch (preset) {
     case '24h':
-      return { from: new Date(now.getTime() - 24 * 60 * 60 * 1000), to };
+      const from24h = new Date(now);
+      from24h.setDate(from24h.getDate() - 1);
+      from24h.setHours(0, 0, 0, 0);
+      return { from: from24h, to: now };
     case '7d':
-      return { from: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), to };
+      const from7d = new Date(now);
+      from7d.setDate(from7d.getDate() - 7);
+      from7d.setHours(0, 0, 0, 0);
+      return { from: from7d, to: now };
     case '30d':
-      return { from: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000), to };
+      const from30d = new Date(now);
+      from30d.setDate(from30d.getDate() - 30);
+      from30d.setHours(0, 0, 0, 0);
+      return { from: from30d, to: now };
     case '90d':
-      return { from: new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000), to };
+      const from90d = new Date(now);
+      from90d.setDate(from90d.getDate() - 90);
+      from90d.setHours(0, 0, 0, 0);
+      return { from: from90d, to: now };
     default:
-      return { from: new Date(now.getTime() - 24 * 60 * 60 * 1000), to };
+      const fromDefault = new Date(now);
+      fromDefault.setDate(fromDefault.getDate() - 7);
+      fromDefault.setHours(0, 0, 0, 0);
+      return { from: fromDefault, to: now };
   }
 };
 
@@ -46,7 +60,7 @@ export const useBreachFilters = () => {
     const marketParam = searchParams.get('market') as Market | 'All' | null;
     const ruleParam = searchParams.get('rule');
     
-    let timeRangePreset: TimeRangePreset = '24h';
+    let timeRangePreset: TimeRangePreset = '7d'; // Changed default from '24h' to '7d'
     let dateRange: DateRange | undefined;
     
     if (fromParam && toParam) {
@@ -59,7 +73,7 @@ export const useBreachFilters = () => {
       timeRangePreset = rangeParam as TimeRangePreset;
       dateRange = getDateRangeFromPreset(timeRangePreset);
     } else {
-      dateRange = getDateRangeFromPreset('24h');
+      dateRange = getDateRangeFromPreset('7d'); // Changed default from '24h' to '7d'
     }
 
     return {
@@ -149,9 +163,9 @@ export const useBreachFilters = () => {
   }, [updateFilters]);
 
   const clearAllFilters = useCallback(() => {
-    const defaultDateRange = getDateRangeFromPreset('24h');
+    const defaultDateRange = getDateRangeFromPreset('7d'); // Changed default from '24h' to '7d'
     setFilters({
-      timeRangePreset: '24h',
+      timeRangePreset: '7d', // Changed default from '24h' to '7d'
       dateRange: defaultDateRange,
       providerId: null,
       providerName: null,
@@ -163,7 +177,7 @@ export const useBreachFilters = () => {
   }, [setSearchParams]);
 
   const hasActiveFilters = useCallback(() => {
-    return filters.timeRangePreset !== '24h' ||
+    return filters.timeRangePreset !== '7d' || // Changed default comparison from '24h' to '7d'
            filters.providerId !== null ||
            filters.market !== 'All' ||
            filters.ruleSetId !== 'all';
