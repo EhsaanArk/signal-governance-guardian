@@ -3,7 +3,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Cell, PieChart, Pie, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Cell, PieChart, Pie, ResponsiveContainer } from 'recharts';
 import { fetchHeatmapData, fetchTopBreachedRules } from '@/lib/api/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
@@ -27,40 +27,135 @@ const DashboardCharts = () => {
 
   const HeatmapChart = () => {
     if (heatmapLoading) {
-      return <Skeleton className="h-64 w-full" />;
+      return <Skeleton className="h-80 w-full" />;
     }
 
-    // Transform heatmap data for visualization
     const markets = ['Forex', 'Crypto', 'Indices'];
-    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const timeSlots = [
+      { range: '00-06', label: 'Night', hours: [0, 1, 2, 3, 4, 5] },
+      { range: '06-12', label: 'Morning', hours: [6, 7, 8, 9, 10, 11] },
+      { range: '12-18', label: 'Afternoon', hours: [12, 13, 14, 15, 16, 17] },
+      { range: '18-24', label: 'Evening', hours: [18, 19, 20, 21, 22, 23] }
+    ];
+
+    const getIntensityColor = (count) => {
+      if (count === 0) return 'bg-gray-100 border border-gray-200';
+      if (count <= 2) return 'bg-yellow-200 border border-yellow-300';
+      if (count <= 5) return 'bg-orange-300 border border-orange-400';
+      if (count <= 10) return 'bg-red-400 border border-red-500';
+      return 'bg-red-600 border border-red-700';
+    };
+
+    const getTextColor = (count) => {
+      if (count === 0) return 'text-gray-400';
+      if (count <= 2) return 'text-yellow-800';
+      if (count <= 5) return 'text-orange-800';
+      return 'text-white';
+    };
 
     return (
-      <div className="h-64 w-full">
-        <div className="grid grid-cols-24 gap-px h-full">
-          {hours.map(hour => (
-            <div key={hour} className="text-xs text-center mb-1">
-              {hour}
-            </div>
-          ))}
+      <div className="space-y-6">
+        {/* Legend */}
+        <div className="flex flex-wrap items-center gap-4 text-sm">
+          <span className="font-medium text-gray-700">Loss Events Intensity:</span>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
+            <span className="text-gray-600">None (0)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-yellow-200 border border-yellow-300 rounded"></div>
+            <span className="text-gray-600">Low (1-2)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-orange-300 border border-orange-400 rounded"></div>
+            <span className="text-gray-600">Medium (3-5)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-400 border border-red-500 rounded"></div>
+            <span className="text-gray-600">High (6-10)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-600 border border-red-700 rounded"></div>
+            <span className="text-gray-600">Critical (10+)</span>
+          </div>
+        </div>
+
+        {/* Heatmap Grid */}
+        <div className="space-y-4">
+          {/* Time Headers */}
+          <div className="grid grid-cols-5 gap-2">
+            <div className="text-sm font-medium text-gray-600">Market</div>
+            {timeSlots.map(slot => (
+              <div key={slot.range} className="text-center">
+                <div className="text-sm font-medium text-gray-700">{slot.label}</div>
+                <div className="text-xs text-gray-500">{slot.range} UTC</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Market Rows */}
           {markets.map(market => (
-            <div key={market} className="col-span-24 grid grid-cols-24 gap-px">
-              {hours.map(hour => {
-                const intensity = heatmapData?.[market]?.[hour] || 0;
-                const opacity = Math.min(intensity / 10, 1);
+            <div key={market} className="grid grid-cols-5 gap-2 items-center">
+              <div className="text-sm font-medium text-gray-700 py-2">
+                {market}
+              </div>
+              {timeSlots.map(slot => {
+                const totalEvents = slot.hours.reduce((sum, hour) => {
+                  return sum + (heatmapData?.[market]?.[hour] || 0);
+                }, 0);
+
                 return (
                   <div
-                    key={`${market}-${hour}`}
-                    className="h-8 bg-red-500 hover:bg-red-600 cursor-pointer rounded-sm flex items-center justify-center text-xs text-white"
-                    style={{ opacity: opacity + 0.1 }}
-                    onClick={() => navigate(`/admin/breaches?market=${market}&hour=${hour}`)}
-                    title={`${market} at ${hour}:00 UTC - ${intensity} events`}
+                    key={`${market}-${slot.range}`}
+                    className={`
+                      h-16 rounded-lg flex items-center justify-center 
+                      cursor-pointer transition-all duration-200 
+                      hover:scale-105 hover:shadow-md
+                      ${getIntensityColor(totalEvents)}
+                    `}
+                    onClick={() => navigate(`/admin/breaches?market=${market}&timeSlot=${slot.range}`)}
+                    title={`${market} ${slot.label} (${slot.range} UTC) - ${totalEvents} loss events`}
                   >
-                    {intensity > 0 ? intensity : ''}
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${getTextColor(totalEvents)}`}>
+                        {totalEvents || '0'}
+                      </div>
+                      <div className={`text-xs ${getTextColor(totalEvents)}`}>
+                        events
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
           ))}
+        </div>
+
+        {/* Summary Stats */}
+        <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Total Events:</span> {
+              Object.values(heatmapData || {}).reduce((total, marketData) => {
+                return total + Object.values(marketData).reduce((sum, count) => sum + count, 0);
+              }, 0)
+            }
+          </div>
+          <div className="text-sm text-gray-600">
+            <span className="font-medium">Most Active:</span> {
+              (() => {
+                let maxCount = 0;
+                let maxMarket = '';
+                Object.entries(heatmapData || {}).forEach(([market, hours]) => {
+                  const marketTotal = Object.values(hours).reduce((sum, count) => sum + count, 0);
+                  if (marketTotal > maxCount) {
+                    maxCount = marketTotal;
+                    maxMarket = market;
+                  }
+                });
+                return maxMarket || 'None';
+              })()
+            }
+          </div>
         </div>
       </div>
     );
@@ -110,9 +205,9 @@ const DashboardCharts = () => {
       {/* Loss-Event Heat-map */}
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitle className="text-lg">Loss-Events Heat-map</CardTitle>
+          <CardTitle className="text-lg">Loss-Events Activity Map</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Time-of-day vs #SL (last 7 days, per market)
+            Distribution of stop-loss events across markets and time periods (last 7 days)
           </p>
         </CardHeader>
         <CardContent>
