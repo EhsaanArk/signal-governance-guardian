@@ -8,6 +8,7 @@ import { TopBreachedRule } from '@/lib/api/dashboard';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { Market } from '@/types/database';
 import MarketFilter from '../MarketFilter';
+import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
 
 interface TopRulesChartProps {
   topRulesData: TopBreachedRule[] | undefined;
@@ -23,14 +24,17 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
   onMarketChange 
 }) => {
   const navigate = useNavigate();
+  const { timeRange, getDisplayLabel } = useDashboardTimeRange();
   
   // Consistent color scheme matching rule-set icons
   const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 
   const handleRuleClick = (ruleSetId: string) => {
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const today = new Date().toISOString().split('T')[0];
-    navigate(`/admin/breaches?ruleSet=${ruleSetId}&from=${yesterday}&to=${today}`);
+    const { startDate, endDate } = {
+      startDate: timeRange.from.toISOString().split('T')[0],
+      endDate: timeRange.to.toISOString().split('T')[0]
+    };
+    navigate(`/admin/breaches?ruleSet=${ruleSetId}&from=${startDate}&to=${endDate}`);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent, ruleSetId: string) => {
@@ -52,9 +56,17 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
   };
 
   const getTrendTooltip = (delta: number, trend: 'up' | 'down' | 'flat') => {
-    if (trend === 'flat') return 'No significant change vs prev. 24h';
+    if (trend === 'flat') return 'No significant change vs prev. period';
     const sign = delta > 0 ? '+' : '';
-    return `${sign}${delta}% vs prev. 24h`;
+    return `${sign}${delta}% vs prev. period`;
+  };
+
+  const getTimeLabel = () => {
+    if (timeRange.preset === '24h') return 'Most triggered in 24h';
+    if (timeRange.preset === '7d') return 'Most triggered in 7 days';
+    if (timeRange.preset === '30d') return 'Most triggered in 30 days';
+    if (timeRange.preset === '90d') return 'Most triggered in 90 days';
+    return `Most triggered in selected period`;
   };
 
   if (rulesLoading) {
@@ -72,7 +84,7 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
         <h3 className="text-base lg:text-lg font-semibold">Top 5 Breach Rules</h3>
         <MarketFilter selectedMarket={selectedMarket} onMarketChange={onMarketChange} />
       </div>
-      <p className="text-xs lg:text-sm text-muted-foreground">Most triggered in 24h</p>
+      <p className="text-xs lg:text-sm text-muted-foreground">{getTimeLabel()}</p>
 
       {/* Conditional content based on data availability */}
       {hasInsufficientData ? (
@@ -80,7 +92,7 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
         <div className="h-64 flex items-center justify-center">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Not enough variety in breaches last 24h
+              Not enough variety in breaches for selected period
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               At least 3 distinct rules needed for chart

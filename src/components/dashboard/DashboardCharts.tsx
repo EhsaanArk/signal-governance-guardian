@@ -20,13 +20,7 @@ const DashboardCharts = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
         {/* Loss-Event Heat-map */}
         <Card className="xl:col-span-2 min-w-0">
-          <CardHeader>
-            <CardTitle className="text-base lg:text-lg">Loss-Events Activity Map</CardTitle>
-            <p className="text-xs lg:text-sm text-muted-foreground">
-              Distribution of stop-loss events across markets and time periods (last 7 days)
-            </p>
-          </CardHeader>
-          <CardContent className="overflow-hidden">
+          <CardContent className="p-6 overflow-hidden">
             <HeatmapChart heatmapData={heatmapData} heatmapLoading={heatmapLoading} />
           </CardContent>
         </Card>

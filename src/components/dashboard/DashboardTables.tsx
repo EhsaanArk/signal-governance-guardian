@@ -10,6 +10,7 @@ import { fetchExpiringCooldowns } from '@/lib/api/cooldowns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import ComplianceTooltip from '@/components/common/ComplianceTooltip';
+import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
 
 interface RecentBreach {
   id: string;
@@ -31,10 +32,14 @@ interface ExpiringCooldown {
 
 const DashboardTables = () => {
   const navigate = useNavigate();
+  const { getApiDateParams } = useDashboardTimeRange();
 
   const { data: recentBreaches, isLoading: breachesLoading } = useQuery<RecentBreach[]>({
-    queryKey: ['recent-breaches'],
-    queryFn: () => fetchRecentBreaches(10),
+    queryKey: ['recent-breaches', getApiDateParams()],
+    queryFn: () => {
+      const { startDate, endDate } = getApiDateParams();
+      return fetchRecentBreaches(10, startDate, endDate);
+    },
     refetchInterval: 60000,
   });
 
@@ -68,7 +73,7 @@ const DashboardTables = () => {
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
             <CardTitle className="text-base lg:text-lg">Recent Breaches</CardTitle>
-            <p className="text-xs lg:text-sm text-muted-foreground">Latest rule violations</p>
+            <p className="text-xs lg:text-sm text-muted-foreground">Latest rule violations in selected period</p>
           </div>
           <Button 
             variant="outline" 
@@ -112,7 +117,7 @@ const DashboardTables = () => {
               {(!recentBreaches || recentBreaches.length === 0) && (
                 <div className="text-center py-8 text-gray-500">
                   <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No recent breaches</p>
+                  <p className="text-sm">No recent breaches in selected period</p>
                 </div>
               )}
             </div>

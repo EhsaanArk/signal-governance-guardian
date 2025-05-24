@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useNavigate } from 'react-router-dom';
 import { HeatmapData } from '@/lib/api/dashboard';
 import { TRADING_SESSIONS, getSessionEvents, TradingSession } from '@/utils/tradingSessions';
+import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
 
 interface HeatmapChartProps {
   heatmapData: HeatmapData | undefined;
@@ -13,10 +14,22 @@ interface HeatmapChartProps {
 
 const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading }) => {
   const navigate = useNavigate();
+  const { timeRange } = useDashboardTimeRange();
 
   if (heatmapLoading) {
     return <Skeleton className="h-80 w-full" />;
   }
+
+  const getPeriodLabel = () => {
+    switch (timeRange.preset) {
+      case '24h': return 'last 24 hours';
+      case '7d': return 'last 7 days';
+      case '30d': return 'last 30 days';
+      case '90d': return 'last 90 days';
+      case 'custom': return 'selected period';
+      default: return 'last 7 days';
+    }
+  };
 
   const markets = ['Forex', 'Crypto', 'Indices'];
 
@@ -37,7 +50,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
 
   const getTooltipText = (session: TradingSession, market: string, count: number) => {
     const eventText = count === 1 ? 'SL event' : 'SL events';
-    return `${session.name} • ${market} • ${count} ${eventText} (last 7 days)`;
+    return `${session.name} • ${market} • ${count} ${eventText} (${getPeriodLabel()})`;
   };
 
   const getSessionTotal = (session: TradingSession) => {
@@ -49,6 +62,14 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
   return (
     <TooltipProvider>
       <div className="space-y-4 overflow-hidden">
+        {/* Updated title with dynamic period */}
+        <div className="mb-4">
+          <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
+          <p className="text-xs lg:text-sm text-muted-foreground">
+            Distribution of stop-loss events across markets and time periods ({getPeriodLabel()})
+          </p>
+        </div>
+
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm">
           <span className="font-medium text-gray-700 text-xs lg:text-sm">Loss Events Intensity:</span>
@@ -158,7 +179,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{market} • {marketTotal} total events (last 7 days)</p>
+                      <p>{market} • {marketTotal} total events ({getPeriodLabel()})</p>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -195,7 +216,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{session.name} • {sessionTotal} total events (last 7 days)</p>
+                      <p>{session.name} • {sessionTotal} total events ({getPeriodLabel()})</p>
                     </TooltipContent>
                   </Tooltip>
                 );

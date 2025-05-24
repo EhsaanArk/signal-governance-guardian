@@ -7,6 +7,7 @@ import { ArrowUp, ArrowDown, Clock, AlertTriangle, TrendingUp, Users } from 'luc
 import { fetchDashboardMetrics } from '@/lib/api/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
+import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
 
 interface KPICard {
   title: string;
@@ -22,11 +23,38 @@ interface KPICard {
 
 const DashboardKPICards = () => {
   const navigate = useNavigate();
+  const { getApiDateParams, timeRange } = useDashboardTimeRange();
+  
   const { data: metrics, isLoading, error } = useQuery({
-    queryKey: ['dashboard-metrics'],
-    queryFn: fetchDashboardMetrics,
+    queryKey: ['dashboard-metrics', getApiDateParams()],
+    queryFn: () => {
+      const { startDate, endDate } = getApiDateParams();
+      return fetchDashboardMetrics(startDate, endDate);
+    },
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+
+  const getTimeLabel = () => {
+    switch (timeRange.preset) {
+      case '24h': return '24-h';
+      case '7d': return '7-d';
+      case '30d': return '30-d';
+      case '90d': return '90-d';
+      case 'custom': return 'Period';
+      default: return '24-h';
+    }
+  };
+
+  const getPeriodLabel = () => {
+    switch (timeRange.preset) {
+      case '24h': return 'last 24 hours';
+      case '7d': return 'last 7 days';
+      case '30d': return 'last 30 days';
+      case '90d': return 'last 90 days';
+      case 'custom': return 'selected period';
+      default: return 'last 24 hours';
+    }
+  };
 
   if (isLoading) {
     return (
@@ -69,20 +97,29 @@ const DashboardKPICards = () => {
       onClick: () => navigate('/admin/cooldowns'),
     },
     {
-      title: '24-h Breaches',
-      tooltip: 'Total number of rule breaches detected in the last 24 hours',
+      title: `${getTimeLabel()} Breaches`,
+      tooltip: `Total number of rule breaches detected in the ${getPeriodLabel()}`,
       value: metrics?.breaches24h || 0,
       icon: AlertTriangle,
       change: metrics?.breachChange || 0,
       isGoodWhenIncreasing: false, // Bad when increasing
-      onClick: () => navigate('/admin/breaches?period=24h'),
+      onClick: () => {
+        const params = new URLSearchParams();
+        if (timeRange.preset !== '24h') {
+          params.set('from', timeRange.from.toISOString().split('T')[0]);
+          params.set('to', timeRange.to.toISOString().split('T')[0]);
+        } else {
+          params.set('period', '24h');
+        }
+        navigate(`/admin/breaches?${params.toString()}`);
+      },
     },
     {
-      title: '24-h Win-rate',
-      tooltip: 'Percentage of profitable trades executed in the last 24 hours',
+      title: `${getTimeLabel()} Win-rate`,
+      tooltip: `Percentage of profitable trades executed in the ${getPeriodLabel()}`,
       value: `${metrics?.winRate24h || 0}%`,
       displayValue: metrics?.winRate24h || 0,
-      timeLabel: '24-h',
+      timeLabel: getTimeLabel(),
       icon: TrendingUp,
       change: metrics?.winRateChange || 0,
       isGoodWhenIncreasing: true, // Good when increasing
