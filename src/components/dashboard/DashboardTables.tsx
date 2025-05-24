@@ -11,18 +11,36 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import ComplianceTooltip from '@/components/common/ComplianceTooltip';
 
+interface RecentBreach {
+  id: string;
+  rule_name: string;
+  rule_type: string;
+  market: string;
+  symbol: string;
+  status: string;
+  created_at: string;
+}
+
+interface ExpiringCooldown {
+  id: string;
+  rule_name: string;
+  market: string;
+  symbol: string;
+  expires_at: string;
+}
+
 const DashboardTables = () => {
   const navigate = useNavigate();
 
-  const { data: recentBreaches, isLoading: breachesLoading } = useQuery({
+  const { data: recentBreaches, isLoading: breachesLoading } = useQuery<RecentBreach[]>({
     queryKey: ['recent-breaches'],
     queryFn: () => fetchRecentBreaches(10),
     refetchInterval: 60000,
   });
 
-  const { data: expiringCooldowns, isLoading: cooldownsLoading } = useQuery({
+  const { data: expiringCooldowns, isLoading: cooldownsLoading } = useQuery<ExpiringCooldown[]>({
     queryKey: ['expiring-cooldowns'],
-    queryFn: fetchExpiringCooldowns,
+    queryFn: () => fetchExpiringCooldowns(10),
     refetchInterval: 60000,
   });
 

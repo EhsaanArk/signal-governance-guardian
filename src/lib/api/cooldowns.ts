@@ -23,6 +23,36 @@ export async function testCooldownsConnection(): Promise<boolean> {
   }
 }
 
+export async function fetchExpiringCooldowns(limit: number = 10) {
+  console.log('⏰ Fetching expiring cooldowns...');
+  
+  const { data, error } = await supabase
+    .from('active_cooldowns')
+    .select(`
+      *,
+      signal_provider:signal_providers!active_cooldowns_provider_id_fkey(provider_name),
+      rule_set:rule_sets!active_cooldowns_rule_set_id_fkey(name)
+    `)
+    .eq('status', 'active')
+    .order('expires_at', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error('❌ Error fetching expiring cooldowns:', error);
+    throw error;
+  }
+
+  console.log('✅ Expiring cooldowns fetched:', data?.length || 0);
+
+  return data?.map(cooldown => ({
+    id: cooldown.id,
+    rule_name: cooldown.rule_set?.name || 'Unknown Rule',
+    market: cooldown.market,
+    symbol: cooldown.signal_data?.symbol || 'Unknown',
+    expires_at: cooldown.expires_at
+  })) || [];
+}
+
 export async function fetchCooldowns(): Promise<CoolDown[]> {
   console.log('🚀 Starting cooldowns fetch...');
   
