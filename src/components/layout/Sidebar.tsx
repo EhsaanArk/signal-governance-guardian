@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart2, FileText, GitBranch, Settings, Shield } from 'lucide-react';
+import { BarChart2, FileText, GitBranch, Settings, Shield, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -79,10 +79,11 @@ const Sidebar = () => {
             label="Dashboard" 
             active={isActive('/')} 
           />
-          <DisabledSidebarItem 
-            icon={FileText} 
+          <SidebarItem 
+            to="/admin/providers" 
+            icon={Users} 
             label="Providers" 
-            tooltip="Coming Soon"
+            active={isActive('/admin/providers')} 
           />
           <div className="relative py-3">
             <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />

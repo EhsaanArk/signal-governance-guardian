@@ -9,6 +9,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import DashboardPage from "./pages/DashboardPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import ProvidersPage from "./pages/ProvidersPage";
 import RuleSetsPage from "./pages/RuleSetsPage";
 import RuleSetDetailPage from "./pages/RuleSetDetailPage";
 import CreateRuleSetPage from "./pages/CreateRuleSetPage";
@@ -29,6 +30,7 @@ const App = () => (
           <Route path="/admin/dashboard" element={<DashboardPage />} />
           <Route path="/old-index" element={<Index />} />
           
+          <Route path="/admin/providers" element={<ProvidersPage />} />
           <Route path="/admin/rulesets" element={<RuleSetsPage />} />
           <Route path="/admin/rulesets/:id" element={<RuleSetDetailPage />} />
           <Route path="/admin/rulesets/create" element={<CreateRuleSetPage />} />
