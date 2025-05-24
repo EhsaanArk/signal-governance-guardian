@@ -2,6 +2,7 @@
 import { DashboardMetrics } from '@/lib/api/types';
 import { TimeRangePreset } from '@/hooks/useDashboardFilters';
 import { DashboardFiltersService, FilterContext } from './DashboardFiltersService';
+import { ArrowUp, ArrowDown, Clock, AlertTriangle, TrendingUp, Users } from 'lucide-react';
 
 export interface KPICard {
   title: string;
@@ -26,8 +27,6 @@ export class KPIMetricsService {
       navigateToProvidersReview: () => void;
     }
   ): KPICard[] {
-    const { ArrowUp, ArrowDown, Clock, AlertTriangle, TrendingUp, Users } = require('lucide-react');
-    
     const timeLabel = DashboardFiltersService.getTimeLabel(context.timeRange?.preset || '24h');
     const periodLabel = DashboardFiltersService.getPeriodLabel(context.timeRange?.preset || '24h');
     const providerContext = DashboardFiltersService.getDisplayContext(context);
