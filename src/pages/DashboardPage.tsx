@@ -21,16 +21,14 @@ const DashboardPage = () => {
             {/* KPI Cards Row */}
             <DashboardKPICards />
             
+            {/* Quick Actions Row */}
+            <DashboardQuickActions />
+            
             {/* Charts Row */}
             <DashboardCharts />
             
             {/* Tables Row */}
             <DashboardTables />
-            
-            {/* Quick Actions Sidebar - Desktop only */}
-            <div className="hidden lg:block">
-              <DashboardQuickActions />
-            </div>
           </div>
         </main>
       </div>
