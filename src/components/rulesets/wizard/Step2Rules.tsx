@@ -16,6 +16,7 @@ import PositivePipCancelRule from './rules/PositivePipCancelRule';
 import RuleSummary from './RuleSummary';
 
 import {
+  Market,
   CoolingOffRule as CoolingOffRuleType,
   SameDirectionGuardRule as SameDirectionGuardRuleType,
   MaxActiveTradesRule as MaxActiveTradesRuleType,
@@ -29,6 +30,7 @@ interface Step2RulesProps {
     maxActiveTrades?: MaxActiveTradesRuleType;
     positivePipCancelLimit?: PositivePipCancelLimitRuleType;
   };
+  selectedMarket?: Market;
   onBack: () => void;
   onSave: (data: {
     coolingOff: CoolingOffRuleType;
@@ -43,6 +45,7 @@ interface Step2RulesProps {
 
 const Step2Rules: React.FC<Step2RulesProps> = ({ 
   initialData, 
+  selectedMarket,
   onBack, 
   onSave, 
   onCancel,
@@ -62,6 +65,7 @@ const Step2Rules: React.FC<Step2RulesProps> = ({
       enabled: false,
       pairScope: 'All',
       directions: { long: true, short: true },
+      selectedPairs: [],
     }
   );
   
@@ -146,6 +150,7 @@ const Step2Rules: React.FC<Step2RulesProps> = ({
                 value={sameDirectionGuard} 
                 onChange={setSameDirectionGuard}
                 disabled={!sameDirectionGuard.enabled}
+                selectedMarket={selectedMarket}
               />
             </AccordionContent>
           </AccordionItem>

@@ -13,11 +13,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Market } from '@/types';
 
-// Define the form schema
+// Define the form schema with single market selection
 const formSchema = z.object({
   name: z.string().min(2, {
     message: 'Name must be at least 2 characters.',
@@ -25,8 +26,8 @@ const formSchema = z.object({
     message: 'Name must not exceed 64 characters.',
   }),
   description: z.string().optional(),
-  markets: z.array(z.enum(['Forex', 'Crypto', 'Indices'])).min(1, {
-    message: 'Please select at least one market.',
+  market: z.enum(['Forex', 'Crypto', 'Indices'], {
+    required_error: 'Please select a market.',
   }),
 });
 
@@ -48,7 +49,7 @@ const Step1Basics: React.FC<Step1BasicsProps> = ({ initialData, onNext, onCancel
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
-      markets: initialData?.markets || [],
+      market: initialData?.markets?.[0] || undefined,
     },
   });
   
@@ -62,7 +63,7 @@ const Step1Basics: React.FC<Step1BasicsProps> = ({ initialData, onNext, onCancel
     onNext({
       name: data.name,
       description: data.description,
-      markets: data.markets as Market[]
+      markets: [data.market] as Market[]
     });
   };
   
@@ -103,33 +104,26 @@ const Step1Basics: React.FC<Step1BasicsProps> = ({ initialData, onNext, onCancel
         
         <FormField
           control={form.control}
-          name="markets"
+          name="market"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Markets</FormLabel>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {marketOptions.map((market) => (
-                  <FormItem
-                    key={market.id}
-                    className="flex items-center space-x-3 space-y-0"
-                  >
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value?.includes(market.value)}
-                        onCheckedChange={(checked) => {
-                          const newValue = checked
-                            ? [...field.value, market.value]
-                            : field.value.filter((value) => value !== market.value);
-                          field.onChange(newValue);
-                        }}
-                      />
-                    </FormControl>
-                    <FormLabel className="font-normal cursor-pointer">
-                      {market.label}
-                    </FormLabel>
-                  </FormItem>
-                ))}
-              </div>
+              <FormLabel>Market*</FormLabel>
+              <FormControl>
+                <RadioGroup
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                >
+                  {marketOptions.map((market) => (
+                    <div key={market.id} className="flex items-center space-x-2">
+                      <RadioGroupItem value={market.value} id={market.id} />
+                      <Label htmlFor={market.id} className="font-normal cursor-pointer">
+                        {market.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -40,6 +39,7 @@ const CreateRuleSetPage: React.FC = () => {
     enabled: false,
     pairScope: 'All',
     directions: { long: true, short: true },
+    selectedPairs: [],
   });
   
   const [maxActiveTrades, setMaxActiveTrades] = useState<MaxActiveTradesRule>({
@@ -182,6 +182,7 @@ const CreateRuleSetPage: React.FC = () => {
             />
           ) : (
             <Step2Rules
+              selectedMarket={markets[0]}
               onBack={() => setCurrentStep(1)}
               onSave={handleStep2Save}
               onCancel={handleCancel}

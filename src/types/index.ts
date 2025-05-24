@@ -55,6 +55,7 @@ export interface SameDirectionGuardRule {
     long: boolean;
     short: boolean;
   };
+  selectedPairs?: string[];
 }
 
 export interface MaxActiveTradesRule {

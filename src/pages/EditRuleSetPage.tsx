@@ -48,7 +48,8 @@ const mockCompleteRuleSet: CompleteRuleSet = {
   sameDirectionGuard: {
     enabled: true,
     pairScope: 'All',
-    directions: { long: true, short: false }
+    directions: { long: true, short: false },
+    selectedPairs: []
   },
   
   maxActiveTrades: {
@@ -175,6 +176,7 @@ const EditRuleSetPage: React.FC = () => {
                 maxActiveTrades: ruleSet?.maxActiveTrades as MaxActiveTradesRule,
                 positivePipCancelLimit: ruleSet?.positivePipCancelLimit as PositivePipCancelLimitRule
               }}
+              selectedMarket={ruleSet?.markets[0]}
               isEditing={true}
               onBack={() => setCurrentStep(1)}
               onSave={handleStep2Save}
