@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import Sidebar from './Sidebar';
 
 interface MainLayoutProps {
@@ -8,12 +9,14 @@ interface MainLayoutProps {
 
 const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <div className="flex-1 overflow-auto">
-        {children}
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <Sidebar />
+        <SidebarInset className="flex-1">
+          {children}
+        </SidebarInset>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 

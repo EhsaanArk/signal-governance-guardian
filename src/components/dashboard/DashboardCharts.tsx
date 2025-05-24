@@ -54,40 +54,40 @@ const DashboardCharts = () => {
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 overflow-hidden">
         {/* Legend */}
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <span className="font-medium text-gray-700">Loss Events Intensity:</span>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
-            <span className="text-gray-600">None (0)</span>
+        <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm">
+          <span className="font-medium text-gray-700 text-xs lg:text-sm">Loss Events Intensity:</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded"></div>
+            <span className="text-gray-600 text-xs">None (0)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-200 border border-yellow-300 rounded"></div>
-            <span className="text-gray-600">Low (1-2)</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-yellow-200 border border-yellow-300 rounded"></div>
+            <span className="text-gray-600 text-xs">Low (1-2)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-orange-300 border border-orange-400 rounded"></div>
-            <span className="text-gray-600">Medium (3-5)</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-orange-300 border border-orange-400 rounded"></div>
+            <span className="text-gray-600 text-xs">Medium (3-5)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-400 border border-red-500 rounded"></div>
-            <span className="text-gray-600">High (6-10)</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-red-400 border border-red-500 rounded"></div>
+            <span className="text-gray-600 text-xs">High (6-10)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-600 border border-red-700 rounded"></div>
-            <span className="text-gray-600">Critical (10+)</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 bg-red-600 border border-red-700 rounded"></div>
+            <span className="text-gray-600 text-xs">Critical (10+)</span>
           </div>
         </div>
 
         {/* Heatmap Grid */}
-        <div className="space-y-4">
+        <div className="space-y-3 overflow-x-auto">
           {/* Time Headers */}
-          <div className="grid grid-cols-5 gap-2">
-            <div className="text-sm font-medium text-gray-600">Market</div>
+          <div className="grid grid-cols-5 gap-2 min-w-[480px]">
+            <div className="text-xs lg:text-sm font-medium text-gray-600">Market</div>
             {timeSlots.map(slot => (
               <div key={slot.range} className="text-center">
-                <div className="text-sm font-medium text-gray-700">{slot.label}</div>
+                <div className="text-xs lg:text-sm font-medium text-gray-700">{slot.label}</div>
                 <div className="text-xs text-gray-500">{slot.range} UTC</div>
               </div>
             ))}
@@ -95,8 +95,8 @@ const DashboardCharts = () => {
 
           {/* Market Rows */}
           {markets.map(market => (
-            <div key={market} className="grid grid-cols-5 gap-2 items-center">
-              <div className="text-sm font-medium text-gray-700 py-2">
+            <div key={market} className="grid grid-cols-5 gap-2 items-center min-w-[480px]">
+              <div className="text-xs lg:text-sm font-medium text-gray-700 py-2">
                 {market}
               </div>
               {timeSlots.map(slot => {
@@ -108,7 +108,7 @@ const DashboardCharts = () => {
                   <div
                     key={`${market}-${slot.range}`}
                     className={`
-                      h-16 rounded-lg flex items-center justify-center 
+                      h-12 lg:h-16 rounded-lg flex items-center justify-center 
                       cursor-pointer transition-all duration-200 
                       hover:scale-105 hover:shadow-md
                       ${getIntensityColor(totalEvents)}
@@ -117,7 +117,7 @@ const DashboardCharts = () => {
                     title={`${market} ${slot.label} (${slot.range} UTC) - ${totalEvents} loss events`}
                   >
                     <div className="text-center">
-                      <div className={`text-lg font-bold ${getTextColor(totalEvents)}`}>
+                      <div className={`text-sm lg:text-lg font-bold ${getTextColor(totalEvents)}`}>
                         {totalEvents || '0'}
                       </div>
                       <div className={`text-xs ${getTextColor(totalEvents)}`}>
@@ -133,14 +133,14 @@ const DashboardCharts = () => {
 
         {/* Summary Stats */}
         <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
-          <div className="text-sm text-gray-600">
+          <div className="text-xs lg:text-sm text-gray-600">
             <span className="font-medium">Total Events:</span> {
               Object.values(heatmapData || {}).reduce((total, marketData) => {
                 return total + Object.values(marketData).reduce((sum, count) => sum + count, 0);
               }, 0)
             }
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs lg:text-sm text-gray-600">
             <span className="font-medium">Most Active:</span> {
               (() => {
                 let maxCount = 0;
@@ -201,46 +201,48 @@ const DashboardCharts = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {/* Loss-Event Heat-map */}
-      <Card className="lg:col-span-2">
-        <CardHeader>
-          <CardTitle className="text-lg">Loss-Events Activity Map</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Distribution of stop-loss events across markets and time periods (last 7 days)
-          </p>
-        </CardHeader>
-        <CardContent>
-          <HeatmapChart />
-        </CardContent>
-      </Card>
+    <div className="w-full max-w-full">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
+        {/* Loss-Event Heat-map */}
+        <Card className="xl:col-span-2 min-w-0">
+          <CardHeader>
+            <CardTitle className="text-base lg:text-lg">Loss-Events Activity Map</CardTitle>
+            <p className="text-xs lg:text-sm text-muted-foreground">
+              Distribution of stop-loss events across markets and time periods (last 7 days)
+            </p>
+          </CardHeader>
+          <CardContent className="overflow-hidden">
+            <HeatmapChart />
+          </CardContent>
+        </Card>
 
-      {/* Top Breached Rules */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Top 5 Breach Rules</CardTitle>
-          <p className="text-sm text-muted-foreground">Most triggered in 24h</p>
-        </CardHeader>
-        <CardContent>
-          <TopRulesChart />
-          {topRulesData && (
-            <div className="mt-4 space-y-2">
-              {topRulesData.slice(0, 5).map((rule, index) => (
-                <div key={rule.ruleSetId} className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="truncate">{rule.name}</span>
+        {/* Top Breached Rules */}
+        <Card className="min-w-0">
+          <CardHeader>
+            <CardTitle className="text-base lg:text-lg">Top 5 Breach Rules</CardTitle>
+            <p className="text-xs lg:text-sm text-muted-foreground">Most triggered in 24h</p>
+          </CardHeader>
+          <CardContent>
+            <TopRulesChart />
+            {topRulesData && (
+              <div className="mt-4 space-y-2">
+                {topRulesData.slice(0, 5).map((rule, index) => (
+                  <div key={rule.ruleSetId} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div 
+                        className="w-3 h-3 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      <span className="truncate text-xs lg:text-sm">{rule.name}</span>
+                    </div>
+                    <span className="font-medium text-xs lg:text-sm flex-shrink-0">{rule.count}</span>
                   </div>
-                  <span className="font-medium">{rule.count}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -10,14 +10,14 @@ import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions'
 const DashboardPage = () => {
   return (
     <MainLayout>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full min-h-screen">
         <Header 
           title="Dashboard" 
           subtitle="Governance at a Glance"
         />
         
-        <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
-          <div className="w-full max-w-none space-y-4 sm:space-y-6">
+        <main className="flex-1 p-4 lg:p-6 overflow-hidden">
+          <div className="h-full space-y-6 max-w-full">
             {/* KPI Cards Row */}
             <div className="w-full">
               <DashboardKPICards />
