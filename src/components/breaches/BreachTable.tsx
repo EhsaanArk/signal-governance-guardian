@@ -20,14 +20,12 @@ interface BreachTableProps {
 }
 
 const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) => {
-  const [selectedBreach, setSelectedBreach] = useState<BreachLog | null>(null);
+  const [selectedBreachId, setSelectedBreachId] = useState<string | null>(null);
   
   console.log('BreachTable received breaches:', breaches);
   console.log('BreachTable breaches count:', breaches.length);
   
-  const handleRowClick = (breach: BreachLog) => {
-    setSelectedBreach(breach);
-  };
+  const selectedBreach = breaches.find(breach => breach.id === selectedBreachId);
   
   const formatTimestamp = (timestamp: string) => {
     return format(new Date(timestamp), 'yyyy-MM-dd HH:mm:ss');
@@ -46,6 +44,15 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
       default:
         return 'bg-primary text-primary-foreground';
     }
+  };
+
+  const handleViewDetails = (e: React.MouseEvent, breachId: string) => {
+    e.stopPropagation();
+    setSelectedBreachId(breachId);
+  };
+
+  const handleCloseSheet = () => {
+    setSelectedBreachId(null);
   };
   
   return (
@@ -77,11 +84,7 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
               </tr>
             ) : (
               breaches.map((breach) => (
-                <tr 
-                  key={breach.id} 
-                  onClick={() => handleRowClick(breach)}
-                  className="cursor-pointer hover:bg-muted/30"
-                >
+                <tr key={breach.id}>
                   <td>{formatTimestamp(breach.timestamp)}</td>
                   <td>{breach.provider}</td>
                   <td>
@@ -99,90 +102,13 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
                     </Badge>
                   </td>
                   <td>
-                    <Sheet open={selectedBreach?.id === breach.id} onOpenChange={(open) => {
-                      if (!open) setSelectedBreach(null);
-                    }}>
-                      <SheetTrigger asChild>
-                        <Button variant="link" size="sm">
-                          View
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent className="w-[480px] sm:w-[540px]">
-                        <SheetHeader>
-                          <SheetTitle>Breach Details</SheetTitle>
-                          <SheetDescription>
-                            {breach.timestamp && formatTimestamp(breach.timestamp)}
-                          </SheetDescription>
-                        </SheetHeader>
-                        
-                        <div className="mt-6 space-y-6">
-                          <div className="grid grid-cols-3 gap-4">
-                            <div>
-                              <h4 className="text-sm font-medium mb-1">Provider</h4>
-                              <p>{breach.provider}</p>
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-medium mb-1">Market</h4>
-                              <MarketChip market={breach.market} />
-                            </div>
-                            <div>
-                              <h4 className="text-sm font-medium mb-1">Action</h4>
-                              <Badge className={getActionBadgeColor(breach.action)}>
-                                {breach.action}
-                              </Badge>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Rule Information</h4>
-                            <div className="rounded border p-3">
-                              <div className="mb-1">{breach.ruleSetName}</div>
-                              <div className="text-sm text-muted-foreground">{breach.subRule}</div>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">Details</h4>
-                            <div className="rounded border p-3">
-                              <p className="text-sm">{breach.details}</p>
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h4 className="text-sm font-medium mb-1">JSON Snapshot</h4>
-                            <div className="rounded border p-3 bg-muted/30">
-                              <pre className="text-xs overflow-auto max-h-[200px]">
-                                {JSON.stringify({
-                                  id: breach.id,
-                                  timestamp: breach.timestamp,
-                                  provider: breach.provider,
-                                  market: breach.market,
-                                  ruleSet: {
-                                    id: breach.ruleSetId,
-                                    name: breach.ruleSetName,
-                                  },
-                                  subRule: breach.subRule,
-                                  action: breach.action,
-                                  details: breach.details,
-                                }, null, 2)}
-                              </pre>
-                            </div>
-                          </div>
-                          
-                          {breach.action === 'Cooldown' && onEndCoolDown && (
-                            <Button 
-                              onClick={() => {
-                                onEndCoolDown(breach.id);
-                                setSelectedBreach(null);
-                              }}
-                              className="w-full"
-                            >
-                              End Cool-down
-                            </Button>
-                          )}
-                        </div>
-                      </SheetContent>
-                    </Sheet>
+                    <Button 
+                      variant="link" 
+                      size="sm"
+                      onClick={(e) => handleViewDetails(e, breach.id)}
+                    >
+                      View
+                    </Button>
                   </td>
                 </tr>
               ))
@@ -190,6 +116,92 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
           </tbody>
         </table>
       </div>
+
+      <Sheet open={selectedBreachId !== null} onOpenChange={(open) => {
+        if (!open) {
+          handleCloseSheet();
+        }
+      }}>
+        <SheetContent className="w-[480px] sm:w-[540px]">
+          {selectedBreach && (
+            <>
+              <SheetHeader>
+                <SheetTitle>Breach Details</SheetTitle>
+                <SheetDescription>
+                  {selectedBreach.timestamp && formatTimestamp(selectedBreach.timestamp)}
+                </SheetDescription>
+              </SheetHeader>
+              
+              <div className="mt-6 space-y-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Provider</h4>
+                    <p>{selectedBreach.provider}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Market</h4>
+                    <MarketChip market={selectedBreach.market} />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium mb-1">Action</h4>
+                    <Badge className={getActionBadgeColor(selectedBreach.action)}>
+                      {selectedBreach.action}
+                    </Badge>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Rule Information</h4>
+                  <div className="rounded border p-3">
+                    <div className="mb-1">{selectedBreach.ruleSetName}</div>
+                    <div className="text-sm text-muted-foreground">{selectedBreach.subRule}</div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Details</h4>
+                  <div className="rounded border p-3">
+                    <p className="text-sm">{selectedBreach.details}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-1">JSON Snapshot</h4>
+                  <div className="rounded border p-3 bg-muted/30">
+                    <pre className="text-xs overflow-auto max-h-[200px]">
+                      {JSON.stringify({
+                        id: selectedBreach.id,
+                        timestamp: selectedBreach.timestamp,
+                        provider: selectedBreach.provider,
+                        market: selectedBreach.market,
+                        ruleSet: {
+                          id: selectedBreach.ruleSetId,
+                          name: selectedBreach.ruleSetName,
+                        },
+                        subRule: selectedBreach.subRule,
+                        action: selectedBreach.action,
+                        details: selectedBreach.details,
+                      }, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+                
+                {selectedBreach.action === 'Cooldown' && onEndCoolDown && (
+                  <Button 
+                    onClick={() => {
+                      onEndCoolDown(selectedBreach.id);
+                      handleCloseSheet();
+                    }}
+                    className="w-full"
+                  >
+                    End Cool-down
+                  </Button>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
