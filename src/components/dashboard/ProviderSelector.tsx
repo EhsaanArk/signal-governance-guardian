@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { Check, ChevronDown, User, X } from 'lucide-react';
+import { Check, ChevronDown, User, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useFilterTransitions } from '@/hooks/useFilterTransitions';
 
 interface Provider {
   id: string;
@@ -24,6 +25,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
+  const { isTransitioning, handleFilterChange } = useFilterTransitions();
 
   const { data: providers, isLoading } = useQuery({
     queryKey: ['providers', searchValue],
@@ -48,11 +50,13 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   const selectedProvider = providers?.find(p => p.id === selectedProviderId);
 
   const handleProviderSelect = (provider: Provider | null) => {
-    if (provider) {
-      onProviderChange(provider.id, provider.provider_name);
-    } else {
-      onProviderChange(null, null);
-    }
+    handleFilterChange(() => {
+      if (provider) {
+        onProviderChange(provider.id, provider.provider_name);
+      } else {
+        onProviderChange(null, null);
+      }
+    });
     setOpen(false);
     setSearchValue('');
   };
@@ -76,15 +80,20 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             aria-expanded={open}
             aria-label="Select provider"
             className="w-60 justify-between h-8"
+            disabled={isTransitioning}
           >
             <div className="flex items-center gap-2 min-w-0">
-              <User className="h-4 w-4 flex-shrink-0" />
+              {isTransitioning ? (
+                <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" />
+              ) : (
+                <User className="h-4 w-4 flex-shrink-0" />
+              )}
               <span className="truncate">
                 {getDisplayValue()}
               </span>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
-              {selectedProviderId && (
+              {selectedProviderId && !isTransitioning && (
                 <X 
                   className="h-3 w-3 hover:bg-muted rounded-sm p-0.5 cursor-pointer"
                   onClick={(e) => {
@@ -105,6 +114,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               value={searchValue}
               onValueChange={setSearchValue}
               className="h-9"
+              disabled={isTransitioning}
             />
             <CommandList className="max-h-60">
               {isLoading ? (
@@ -121,6 +131,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                       value="all-providers"
                       onSelect={() => handleProviderSelect(null)}
                       className="cursor-pointer"
+                      disabled={isTransitioning}
                     >
                       <Check
                         className={`mr-2 h-4 w-4 ${
@@ -141,6 +152,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                         value={provider.id}
                         onSelect={() => handleProviderSelect(provider)}
                         className="cursor-pointer"
+                        disabled={isTransitioning}
                       >
                         <Check
                           className={`mr-2 h-4 w-4 ${

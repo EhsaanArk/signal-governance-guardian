@@ -1,16 +1,18 @@
 
 import React, { useState } from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/common/DatePickerWithRange';
 import { useDashboardFilters, TIME_RANGE_PRESETS, TimeRangePreset } from '@/hooks/useDashboardFilters';
+import { useFilterTransitions } from '@/hooks/useFilterTransitions';
 import { DateRange } from 'react-day-picker';
 import { useToast } from '@/hooks/use-toast';
 
 const TimeRangeSelector = () => {
   const { filters, setTimeRangePreset, setCustomTimeRange, getTimeRangeDisplayLabel, isCustomTimeRange } = useDashboardFilters();
+  const { isTransitioning, handleFilterChange } = useFilterTransitions();
   const { toast } = useToast();
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>({
@@ -24,7 +26,7 @@ const TimeRangeSelector = () => {
     if (preset === 'custom') {
       setCustomDialogOpen(true);
     } else {
-      setTimeRangePreset(preset);
+      handleFilterChange(() => setTimeRangePreset(preset));
     }
   };
 
@@ -39,7 +41,7 @@ const TimeRangeSelector = () => {
     }
 
     try {
-      setCustomTimeRange(tempDateRange.from, tempDateRange.to);
+      handleFilterChange(() => setCustomTimeRange(tempDateRange.from!, tempDateRange.to!));
       setCustomDialogOpen(false);
       toast({
         title: "Custom Range Applied",
@@ -68,9 +70,12 @@ const TimeRangeSelector = () => {
       
       {/* Desktop Select */}
       <div className="hidden md:block">
-        <Select value={filters.timeRange.preset} onValueChange={handlePresetChange}>
+        <Select value={filters.timeRange.preset} onValueChange={handlePresetChange} disabled={isTransitioning}>
           <SelectTrigger className="w-48 h-8" aria-label="Select reporting period">
-            <SelectValue />
+            <div className="flex items-center gap-2">
+              {isTransitioning && <Loader2 className="h-3 w-3 animate-spin" />}
+              <SelectValue />
+            </div>
           </SelectTrigger>
           <SelectContent className="z-50 bg-white">
             {Object.entries(TIME_RANGE_PRESETS).map(([key, config]) => (
@@ -90,12 +95,19 @@ const TimeRangeSelector = () => {
           onClick={() => setCustomDialogOpen(true)}
           className="h-8"
           aria-label="Select reporting period"
+          disabled={isTransitioning}
         >
-          <Calendar className="h-4 w-4 mr-1" />
-          <span className="truncate max-w-24">
-            {isCustomTimeRange ? 'Custom' : TIME_RANGE_PRESETS[filters.timeRange.preset].label}
-          </span>
-          <ChevronDown className="h-3 w-3 ml-1" />
+          <div className="flex items-center gap-1">
+            {isTransitioning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Calendar className="h-4 w-4" />
+            )}
+            <span className="truncate max-w-24">
+              {isCustomTimeRange ? 'Custom' : TIME_RANGE_PRESETS[filters.timeRange.preset].label}
+            </span>
+            <ChevronDown className="h-3 w-3" />
+          </div>
         </Button>
       </div>
 
@@ -121,8 +133,9 @@ const TimeRangeSelector = () => {
                     key={key}
                     variant={filters.timeRange.preset === key ? "default" : "outline"}
                     size="sm"
+                    disabled={isTransitioning}
                     onClick={() => {
-                      setTimeRangePreset(key as TimeRangePreset);
+                      handleFilterChange(() => setTimeRangePreset(key as TimeRangePreset));
                       setCustomDialogOpen(false);
                     }}
                   >
@@ -144,11 +157,18 @@ const TimeRangeSelector = () => {
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={handleCustomRangeCancel}>
+              <Button variant="outline" onClick={handleCustomRangeCancel} disabled={isTransitioning}>
                 Cancel
               </Button>
-              <Button onClick={handleCustomRangeApply}>
-                Apply Range
+              <Button onClick={handleCustomRangeApply} disabled={isTransitioning}>
+                {isTransitioning ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Applying...
+                  </>
+                ) : (
+                  'Apply Range'
+                )}
               </Button>
             </div>
           </div>

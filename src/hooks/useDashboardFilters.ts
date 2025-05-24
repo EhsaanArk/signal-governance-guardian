@@ -2,6 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DateRange } from 'react-day-picker';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/utils/queryKeys';
 
 export type TimeRangePreset = '24h' | '7d' | '30d' | '90d' | 'custom';
 
@@ -56,6 +58,7 @@ const getComparePeriod = (from: Date, to: Date): { from: Date; to: Date } => {
 
 export const useDashboardFilters = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
   
   const [filters, setFilters] = useState<DashboardFiltersState>(() => {
     // Debug logging for URL parameters
@@ -100,6 +103,12 @@ export const useDashboardFilters = () => {
     return { timeRange, provider };
   });
 
+  // Invalidate all dashboard queries when filters change
+  const invalidateDashboardQueries = useCallback(() => {
+    console.log('🔄 Invalidating dashboard queries due to filter change');
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.all });
+  }, [queryClient]);
+
   const updateFilters = useCallback((newFilters: Partial<DashboardFiltersState>) => {
     const updatedFilters = { ...filters, ...newFilters };
     setFilters(updatedFilters);
@@ -132,7 +141,12 @@ export const useDashboardFilters = () => {
     }
     
     setSearchParams(newSearchParams);
-  }, [filters, searchParams, setSearchParams]);
+    
+    // Invalidate queries after URL update
+    setTimeout(() => {
+      invalidateDashboardQueries();
+    }, 0);
+  }, [filters, searchParams, setSearchParams, invalidateDashboardQueries]);
 
   const setTimeRangePreset = useCallback((preset: TimeRangePreset) => {
     if (preset === 'custom') {
@@ -204,6 +218,7 @@ export const useDashboardFilters = () => {
     getApiDateParams,
     getDisplayContext,
     isCustomTimeRange: filters.timeRange.preset === 'custom',
-    isProviderFiltered: !!filters.provider.providerId
+    isProviderFiltered: !!filters.provider.providerId,
+    invalidateDashboardQueries
   };
 };

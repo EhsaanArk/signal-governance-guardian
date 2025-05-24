@@ -1,60 +1,69 @@
 
 import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
+import { AlertTriangle } from 'lucide-react';
+import { useDashboardContext } from '@/hooks/useDashboardContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import HeatmapLegend from './HeatmapLegend';
 import HeatmapTable from './HeatmapTable';
+import HeatmapLegend from './HeatmapLegend';
 import HeatmapSummary from './HeatmapSummary';
 
-const HeatmapChart: React.FC = () => {
-  const { timeRange } = useDashboardTimeRange();
-  const { rawHeatmapData, transformedHeatmapData, heatmapLoading } = useDashboardData();
-  
-  const getSubtitle = () => {
-    if (timeRange.preset === '24h') return 'Distribution of stop-loss events across markets and time periods (last 24 hours)';
-    if (timeRange.preset === '7d') return 'Distribution of stop-loss events across markets and time periods (last 7 days)';
-    if (timeRange.preset === '30d') return 'Distribution of stop-loss events across markets and time periods (last 30 days)';
-    if (timeRange.preset === '90d') return 'Distribution of stop-loss events across markets and time periods (last 90 days)';
-    return 'Distribution of stop-loss events across markets and time periods (selected period)';
-  };
+const HeatmapChart = () => {
+  const { getContextualTitle } = useDashboardContext();
+  const { transformedHeatmapData, heatmapLoading, heatmapError } = useDashboardData();
+
+  console.log('🔥 HeatmapChart - Loading state:', heatmapLoading);
+  console.log('🔥 HeatmapChart - Data:', transformedHeatmapData);
 
   if (heatmapLoading) {
     return (
       <div className="space-y-4">
-        <div>
-          <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
-          <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-48" />
         </div>
-        <Skeleton className="h-64 w-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </div>
       </div>
     );
   }
 
-  if (!rawHeatmapData || !transformedHeatmapData) {
+  if (heatmapError) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
-          <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
-        </div>
-        <div className="h-64 flex items-center justify-center text-muted-foreground">
-          No data available for the selected period
-        </div>
+      <div className="text-center py-8 text-muted-foreground">
+        <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+        <p className="text-sm">Failed to load heatmap data</p>
+        <p className="text-xs mt-1">Please try refreshing the page</p>
+      </div>
+    );
+  }
+
+  if (!transformedHeatmapData) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p className="text-sm">No heatmap data available</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
-        <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">
+            {getContextualTitle('Loss-Event Heat-map')}
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Breach frequency by market and trading session
+          </p>
+        </div>
       </div>
 
+      <HeatmapSummary data={transformedHeatmapData} />
+      <HeatmapTable data={transformedHeatmapData} />
       <HeatmapLegend />
-      <HeatmapTable heatmapData={rawHeatmapData} markets={transformedHeatmapData.markets} />
-      <HeatmapSummary heatmapData={rawHeatmapData} markets={transformedHeatmapData.markets} />
     </div>
   );
 };

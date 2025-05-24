@@ -22,5 +22,9 @@ export const queryKeys = {
 
 export const defaultQueryOptions = {
   staleTime: 0, // Consider data stale immediately for fresh filter changes
-  refetchInterval: 60000, // Refetch every minute
+  gcTime: 5 * 60 * 1000, // Cache for 5 minutes (reduced from default)
+  refetchInterval: 30000, // Refetch every 30 seconds for active queries
+  refetchOnWindowFocus: true, // Refetch when window gains focus
+  refetchOnMount: true, // Always refetch on mount
+  refetchOnReconnect: true, // Refetch on network reconnect
 } as const;
