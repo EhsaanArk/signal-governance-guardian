@@ -313,10 +313,23 @@ export async function fetchTopBreachedRules(market?: Market | 'All', startDate?:
   const defaultEnd = endDate || now.toISOString();
   const defaultStart = startDate || new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
   
+  // Enhanced debug logging for date ranges
+  console.log('📅 Date range processing:', {
+    provided: { startDate, endDate },
+    resolved: { defaultStart, defaultEnd },
+    duration: Math.round((new Date(defaultEnd).getTime() - new Date(defaultStart).getTime()) / (1000 * 60 * 60 * 24)) + ' days'
+  });
+  
   // Calculate comparison period
   const mainDuration = new Date(defaultEnd).getTime() - new Date(defaultStart).getTime();
   const compareEnd = defaultStart;
   const compareStart = new Date(new Date(defaultStart).getTime() - mainDuration).toISOString();
+
+  console.log('📊 Comparison period:', {
+    compareStart,
+    compareEnd,
+    duration: Math.round(mainDuration / (1000 * 60 * 60 * 24)) + ' days'
+  });
 
   try {
     // Current period breaches query
@@ -341,12 +354,14 @@ export async function fetchTopBreachedRules(market?: Market | 'All', startDate?:
 
     // Apply market filter if specified
     if (market && market !== 'All') {
+      console.log('🎯 Applying market filter:', market);
       currentQuery = currentQuery.eq('market', market);
       previousQuery = previousQuery.eq('market', market);
     }
 
     // Apply provider filter if specified
     if (providerId) {
+      console.log('👤 Applying provider filter:', providerId);
       currentQuery = currentQuery.eq('provider_id', providerId);
       previousQuery = previousQuery.eq('provider_id', providerId);
     }
@@ -358,6 +373,13 @@ export async function fetchTopBreachedRules(market?: Market | 'All', startDate?:
 
     if (currentResult.error) throw currentResult.error;
     if (previousResult.error) throw previousResult.error;
+
+    console.log('📈 Raw breach results:', {
+      currentCount: currentResult.data?.length || 0,
+      previousCount: previousResult.data?.length || 0,
+      currentSample: currentResult.data?.slice(0, 3) || [],
+      previousSample: previousResult.data?.slice(0, 3) || []
+    });
 
     // Count current breaches by rule set
     const currentCounts: { [key: string]: { name: string; count: number } } = {};
@@ -376,6 +398,12 @@ export async function fetchTopBreachedRules(market?: Market | 'All', startDate?:
     previousResult.data?.forEach(breach => {
       const ruleSetId = breach.rule_set_id;
       previousCounts[ruleSetId] = (previousCounts[ruleSetId] || 0) + 1;
+    });
+
+    console.log('📊 Breach counts by rule set:', {
+      current: currentCounts,
+      previous: previousCounts,
+      uniqueRuleSets: Object.keys(currentCounts).length
     });
 
     // Calculate total current breaches for percentages
@@ -417,7 +445,12 @@ export async function fetchTopBreachedRules(market?: Market | 'All', startDate?:
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    console.log('✅ Top breached rules fetched:', topRules.length);
+    console.log('✅ Top breached rules result:', {
+      totalRules: topRules.length,
+      totalBreaches: totalCurrentBreaches,
+      rules: topRules.map(r => ({ name: r.name, count: r.count, percentage: r.percentage }))
+    });
+    
     return topRules;
   } catch (error) {
     console.error('❌ Error fetching top breached rules:', error);

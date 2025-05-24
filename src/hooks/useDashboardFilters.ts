@@ -58,12 +58,20 @@ export const useDashboardFilters = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
   const [filters, setFilters] = useState<DashboardFiltersState>(() => {
-    // Initialize from URL parameters
+    // Debug logging for URL parameters
     const rangeParam = searchParams.get('range');
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
     const providerParam = searchParams.get('provider');
     const providerNameParam = searchParams.get('providerName');
+    
+    console.log('🔍 Initializing dashboard filters from URL:', {
+      rangeParam,
+      fromParam,
+      toParam,
+      providerParam,
+      providerNameParam
+    });
     
     let timeRange: TimeRangeState;
     if (fromParam && toParam) {
@@ -76,10 +84,12 @@ export const useDashboardFilters = () => {
       const preset = rangeParam as TimeRangePreset;
       const { from, to } = getDateRangeFromPreset(preset);
       timeRange = { preset, from, to };
+      console.log(`📅 Setting time range to ${preset}:`, { from: from.toISOString(), to: to.toISOString() });
     } else {
       // Default to 24h
       const { from, to } = getDateRangeFromPreset('24h');
       timeRange = { preset: '24h', from, to };
+      console.log('📅 Defaulting to 24h time range:', { from: from.toISOString(), to: to.toISOString() });
     }
 
     const provider: ProviderState = {
@@ -93,6 +103,8 @@ export const useDashboardFilters = () => {
   const updateFilters = useCallback((newFilters: Partial<DashboardFiltersState>) => {
     const updatedFilters = { ...filters, ...newFilters };
     setFilters(updatedFilters);
+    
+    console.log('🔄 Updating filters:', updatedFilters);
     
     // Update URL parameters
     const newSearchParams = new URLSearchParams(searchParams);
@@ -158,11 +170,14 @@ export const useDashboardFilters = () => {
   }, [filters.timeRange]);
 
   const getApiDateParams = useCallback(() => {
-    return {
+    const params = {
       startDate: filters.timeRange.from.toISOString(),
       endDate: filters.timeRange.to.toISOString(),
       providerId: filters.provider.providerId || undefined
     };
+    
+    console.log('🌐 API date params:', params);
+    return params;
   }, [filters]);
 
   const getDisplayContext = useCallback(() => {
