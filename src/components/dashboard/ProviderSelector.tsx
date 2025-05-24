@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFilterTransitions } from '@/hooks/useFilterTransitions';
+import { queryKeys } from '@/lib/utils/queryKeys';
 
 interface Provider {
   id: string;
@@ -28,7 +29,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   const { isTransitioning, handleFilterChange } = useFilterTransitions();
 
   const { data: providers, isLoading } = useQuery({
-    queryKey: ['providers', searchValue],
+    queryKey: queryKeys.providers.list(searchValue),
     queryFn: async () => {
       let query = supabase
         .from('signal_providers')
