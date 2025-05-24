@@ -12,26 +12,48 @@ export const useFilterTransitions = () => {
     setIsTransitioning(true);
     
     try {
-      // Execute the filter change and wait for completion
+      // Execute the filter change
       await callback();
       
-      console.log('✅ Filter transition complete');
+      // Additional forced refresh to ensure data loads
+      console.log('🔄 Performing additional data refresh');
+      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
+      await queryClient.invalidateQueries({ 
+        queryKey: queryKeys.dashboard.all,
+        refetchType: 'active'
+      });
+      
+      console.log('✅ Filter transition complete with data refresh');
     } catch (error) {
       console.error('❌ Filter transition failed:', error);
     } finally {
-      // Always end transition state
-      setIsTransitioning(false);
+      // Small delay to ensure UI updates properly
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 100);
     }
-  }, []);
+  }, [queryClient]);
 
   const invalidateAllDashboardData = useCallback(async () => {
     console.log('🔄 Manual invalidation of all dashboard data');
-    await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
-    queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
-    await queryClient.invalidateQueries({ 
-      queryKey: queryKeys.dashboard.all,
-      refetchType: 'active'
-    });
+    setIsTransitioning(true);
+    
+    try {
+      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
+      queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
+      await queryClient.invalidateQueries({ 
+        queryKey: queryKeys.dashboard.all,
+        refetchType: 'active'
+      });
+      queryClient.resetQueries({ queryKey: queryKeys.dashboard.all });
+    } catch (error) {
+      console.error('❌ Manual invalidation failed:', error);
+    } finally {
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 100);
+    }
   }, [queryClient]);
 
   return {

@@ -59,31 +59,41 @@ export const useDashboardFilters = () => {
     return { timeRange, provider };
   });
 
-  // Immediate query invalidation function
+  // Immediate and thorough query refresh function
   const forceRefreshQueries = useCallback(async () => {
-    console.log('🔄 Starting immediate query refresh');
+    console.log('🔄 Starting comprehensive query refresh');
     
-    // Step 1: Remove all cached dashboard data
-    await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
-    queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
-    
-    // Step 2: Invalidate and force immediate refetch
-    await queryClient.invalidateQueries({ 
-      queryKey: queryKeys.dashboard.all,
-      refetchType: 'active'
-    });
-    
-    console.log('✅ Query refresh completed');
+    try {
+      // Step 1: Cancel all in-flight queries
+      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
+      
+      // Step 2: Remove all cached data completely
+      queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
+      
+      // Step 3: Force immediate refetch of all active queries
+      await queryClient.invalidateQueries({ 
+        queryKey: queryKeys.dashboard.all,
+        refetchType: 'active'
+      });
+      
+      // Step 4: Reset query state to ensure fresh data
+      queryClient.resetQueries({ queryKey: queryKeys.dashboard.all });
+      
+      console.log('✅ Comprehensive query refresh completed');
+    } catch (error) {
+      console.error('❌ Query refresh failed:', error);
+    }
   }, [queryClient]);
 
   const updateFilters = useCallback(async (newFilters: Partial<DashboardFiltersState>) => {
+    console.log('🔄 Starting filter update with:', newFilters);
     const updatedFilters = { ...filters, ...newFilters };
-    console.log('🔄 Updating filters synchronously:', updatedFilters);
     
-    // Update state first
+    // Update state immediately
     setFilters(updatedFilters);
+    console.log('📊 Updated filter state:', updatedFilters);
     
-    // Update URL parameters synchronously
+    // Update URL parameters
     const newSearchParams = new URLSearchParams();
     
     // Handle time range params
@@ -102,8 +112,9 @@ export const useDashboardFilters = () => {
     
     // Update URL
     setSearchParams(newSearchParams);
+    console.log('🌐 Updated URL params:', newSearchParams.toString());
     
-    // Force immediate query refresh
+    // Force immediate data refresh
     await forceRefreshQueries();
   }, [filters, setSearchParams, forceRefreshQueries]);
 
@@ -112,7 +123,7 @@ export const useDashboardFilters = () => {
   const providerFilters = useProviderFilters(filters.provider, updateFilters);
 
   const getApiDateParams = useCallback(() => {
-    // Ensure providerId is properly cleaned
+    // Clean provider ID handling
     const cleanProviderId = filters.provider.providerId && filters.provider.providerId !== 'undefined' 
       ? filters.provider.providerId 
       : undefined;
@@ -123,7 +134,7 @@ export const useDashboardFilters = () => {
       providerId: cleanProviderId
     };
     
-    console.log('🌐 API params generated:', params);
+    console.log('🌐 Generated API params:', params);
     return params;
   }, [filters]);
 
