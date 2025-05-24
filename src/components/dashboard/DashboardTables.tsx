@@ -7,6 +7,24 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from '@/components/ui/textarea';
 import { fetchRecentBreaches, fetchExpiringCooldowns } from '@/lib/api/dashboard';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -17,6 +35,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const DashboardTables = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [selectedCooldownId, setSelectedCooldownId] = React.useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [endReason, setEndReason] = React.useState('');
 
   const { data: recentBreaches, isLoading: breachesLoading } = useQuery({
     queryKey: ['dashboard-recent-breaches'],
@@ -29,6 +50,53 @@ const DashboardTables = () => {
     queryFn: fetchExpiringCooldowns,
     refetchInterval: 10000,
   });
+
+  const getActionBadgeVariant = (action: string) => {
+    switch (action.toLowerCase()) {
+      case 'cooldown':
+      case 'cool_down':
+        return 'secondary';
+      case 'signal_rejected':
+      case 'rejected':
+        return 'destructive';
+      case 'suspension':
+      case 'suspended':
+        return 'outline';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getActionBadgeColor = (action: string) => {
+    switch (action.toLowerCase()) {
+      case 'cooldown':
+      case 'cool_down':
+        return 'bg-gray-500 text-white hover:bg-gray-600';
+      case 'signal_rejected':
+      case 'rejected':
+        return 'bg-red-500 text-white hover:bg-red-600';
+      case 'suspension':
+      case 'suspended':
+        return 'bg-orange-500 text-white hover:bg-orange-600';
+      default:
+        return 'bg-gray-500 text-white hover:bg-gray-600';
+    }
+  };
+
+  const handleEndNowClick = (cooldownId: string) => {
+    setSelectedCooldownId(cooldownId);
+    setDialogOpen(true);
+  };
+
+  const handleConfirmEnd = () => {
+    if (selectedCooldownId && endReason) {
+      // In a real app, you'd call an API to end the cooldown
+      console.log('Ending cooldown:', selectedCooldownId, 'Reason:', endReason);
+      setDialogOpen(false);
+      setEndReason('');
+      setSelectedCooldownId(null);
+    }
+  };
 
   const LoadingSkeleton = ({ rows = 5 }: { rows?: number }) => (
     <div className="space-y-3">
@@ -91,7 +159,10 @@ const DashboardTables = () => {
                   </span>
                   <MarketChip market={breach.market} />
                 </div>
-                <Badge variant={breach.action_taken === 'signal_rejected' ? 'destructive' : 'secondary'}>
+                <Badge 
+                  variant={getActionBadgeVariant(breach.action_taken)}
+                  className={getActionBadgeColor(breach.action_taken)}
+                >
                   {breach.action_taken.replace('_', ' ')}
                 </Badge>
               </div>
@@ -144,8 +215,8 @@ const DashboardTables = () => {
                   </TableCell>
                   <TableCell>
                     <Badge 
-                      variant={breach.action_taken === 'signal_rejected' ? 'destructive' : 'secondary'}
-                      className="text-xs"
+                      variant={getActionBadgeVariant(breach.action_taken)}
+                      className={`text-xs ${getActionBadgeColor(breach.action_taken)}`}
                     >
                       {breach.action_taken.replace('_', ' ')}
                     </Badge>
@@ -187,9 +258,9 @@ const DashboardTables = () => {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => navigate(`/admin/cooldowns?id=${cooldown.id}`)}
+                  onClick={() => handleEndNowClick(cooldown.id)}
                 >
-                  Manage
+                  End now
                 </Button>
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -236,9 +307,9 @@ const DashboardTables = () => {
                       variant="outline" 
                       size="sm"
                       className="h-8"
-                      onClick={() => navigate(`/admin/cooldowns?id=${cooldown.id}`)}
+                      onClick={() => handleEndNowClick(cooldown.id)}
                     >
-                      Manage
+                      End now
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -251,55 +322,100 @@ const DashboardTables = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-      {/* Recent Breaches */}
-      <Card className="flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Recent Breaches
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">Last 10 breach events</p>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="shrink-0"
-            onClick={() => navigate('/admin/breaches')}
-          >
-            View All
-          </Button>
-        </CardHeader>
-        <CardContent className="flex-1 pt-0">
-          <RecentBreachesTable />
-        </CardContent>
-      </Card>
+    <>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Recent Breaches */}
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Recent Breaches
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Last 10 breach events</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="shrink-0"
+              onClick={() => navigate('/admin/breaches')}
+            >
+              View All
+            </Button>
+          </CardHeader>
+          <CardContent className="flex-1 pt-0">
+            <RecentBreachesTable />
+          </CardContent>
+        </Card>
 
-      {/* Expiring Cool-downs */}
-      <Card className="flex flex-col">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 text-orange-500" />
-              Expiring Cool-downs
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">Next 10 to expire</p>
+        {/* Expiring Cool-downs */}
+        <Card className="flex flex-col">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 text-orange-500" />
+                Expiring Cool-downs
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Next 10 to expire</p>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="shrink-0"
+              onClick={() => navigate('/admin/cooldowns')}
+            >
+              View All
+            </Button>
+          </CardHeader>
+          <CardContent className="flex-1 pt-0">
+            <ExpiringCooldownsTable />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* End Cooldown Dialog */}
+      <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>End Cooldown Early</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to end this cooldown before its scheduled expiration.
+              Please provide a reason for this override.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Select onValueChange={(value) => setEndReason(value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a reason" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="false_positive">False positive</SelectItem>
+                <SelectItem value="client_request">Client request</SelectItem>
+                <SelectItem value="rule_misconfiguration">Rule misconfiguration</SelectItem>
+                <SelectItem value="testing">Testing or simulation</SelectItem>
+                <SelectItem value="other">Other (specify)</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {endReason === 'other' && (
+              <Textarea 
+                placeholder="Specify the reason..." 
+                onChange={(e) => setEndReason(e.target.value)}
+                className="min-h-[100px]"
+              />
+            )}
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="shrink-0"
-            onClick={() => navigate('/admin/cooldowns')}
-          >
-            View All
-          </Button>
-        </CardHeader>
-        <CardContent className="flex-1 pt-0">
-          <ExpiringCooldownsTable />
-        </CardContent>
-      </Card>
-    </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmEnd} disabled={!endReason}>
+              End Cooldown
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

@@ -6,6 +6,7 @@ import DashboardKPICards from '@/components/dashboard/DashboardKPICards';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import DashboardTables from '@/components/dashboard/DashboardTables';
 import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
+import LiveTicker from '@/components/dashboard/LiveTicker';
 
 const DashboardPage = () => {
   return (
@@ -14,6 +15,7 @@ const DashboardPage = () => {
         <Header 
           title="Dashboard" 
           subtitle="Governance at a Glance"
+          rightContent={<LiveTicker />}
         />
         
         <main className="flex-1 p-4 lg:p-6 overflow-hidden">
