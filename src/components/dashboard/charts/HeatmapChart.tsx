@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate } from 'react-router-dom';
 import { HeatmapData } from '@/lib/api/dashboard';
+import { TRADING_SESSIONS, getSessionEvents, TradingSession } from '@/utils/tradingSessions';
 
 interface HeatmapChartProps {
   heatmapData: HeatmapData | undefined;
@@ -18,12 +19,6 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
   }
 
   const markets = ['Forex', 'Crypto', 'Indices'];
-  const timeSlots = [
-    { range: '00-06', label: 'Night', hours: [0, 1, 2, 3, 4, 5] },
-    { range: '06-12', label: 'Morning', hours: [6, 7, 8, 9, 10, 11] },
-    { range: '12-18', label: 'Afternoon', hours: [12, 13, 14, 15, 16, 17] },
-    { range: '18-24', label: 'Evening', hours: [18, 19, 20, 21, 22, 23] }
-  ];
 
   const getIntensityColor = (count: number) => {
     if (count === 0) return 'bg-gray-100 border border-gray-200';
@@ -40,9 +35,9 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     return 'text-white';
   };
 
-  const getTooltipText = (market: string, timeLabel: string, timeRange: string, count: number) => {
-    const lossText = count === 1 ? 'loss event' : 'loss events';
-    return `${count} ${lossText} in ${market} ${timeLabel} (${timeRange} UTC)`;
+  const getTooltipText = (session: TradingSession, market: string, count: number) => {
+    const eventText = count === 1 ? 'SL event' : 'SL events';
+    return `${session.name} • ${market} • ${count} ${eventText} (last 7 days)`;
   };
 
   return (
@@ -73,60 +68,115 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
           </div>
         </div>
 
-        {/* Heatmap Grid */}
-        <div className="space-y-3 overflow-x-auto">
-          {/* Time Headers */}
-          <div className="grid grid-cols-5 gap-2 min-w-[480px]">
-            <div className="text-xs lg:text-sm font-medium text-gray-600">Market</div>
-            {timeSlots.map(slot => (
-              <div key={slot.range} className="text-center">
-                <div className="text-xs lg:text-sm font-medium text-gray-700">{slot.label}</div>
-                <div className="text-xs text-gray-500">{slot.range} UTC</div>
+        {/* Heatmap Grid - Responsive */}
+        <div className="space-y-3">
+          {/* Desktop Layout (md and up) */}
+          <div className="hidden md:block overflow-x-auto">
+            {/* Session Headers */}
+            <div className="grid grid-cols-6 gap-2 min-w-[600px]">
+              <div className="text-xs lg:text-sm font-medium text-gray-600">Market</div>
+              {TRADING_SESSIONS.map(session => (
+                <div key={session.name} className="text-center">
+                  <div className="text-xs lg:text-sm font-medium text-gray-700">{session.label}</div>
+                  <div className="text-xs text-gray-500">{session.utcRange} UTC</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Market Rows */}
+            {markets.map(market => (
+              <div key={market} className="grid grid-cols-6 gap-2 items-center min-w-[600px]">
+                <div className="text-xs lg:text-sm font-medium text-gray-700 py-2">
+                  {market}
+                </div>
+                {TRADING_SESSIONS.map(session => {
+                  const totalEvents = getSessionEvents(heatmapData, market, session);
+
+                  return (
+                    <Tooltip key={`${market}-${session.name}`}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={`
+                            h-12 lg:h-16 rounded-lg flex items-center justify-center 
+                            cursor-pointer transition-all duration-200 
+                            hover:scale-105 hover:shadow-md
+                            ${getIntensityColor(totalEvents)}
+                          `}
+                          onClick={() => navigate(`/admin/breaches?market=${market}&session=${session.name}`)}
+                        >
+                          <div className="text-center">
+                            <div className={`text-sm lg:text-lg font-bold ${getTextColor(totalEvents)}`}>
+                              {totalEvents || '0'}
+                            </div>
+                            <div className={`text-xs ${getTextColor(totalEvents)}`}>
+                              events
+                            </div>
+                          </div>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{getTooltipText(session, market, totalEvents)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
               </div>
             ))}
           </div>
 
-          {/* Market Rows */}
-          {markets.map(market => (
-            <div key={market} className="grid grid-cols-5 gap-2 items-center min-w-[480px]">
-              <div className="text-xs lg:text-sm font-medium text-gray-700 py-2">
-                {market}
-              </div>
-              {timeSlots.map(slot => {
-                const totalEvents = slot.hours.reduce((sum, hour) => {
-                  return sum + (heatmapData?.[market]?.[hour] || 0);
-                }, 0);
+          {/* Mobile Layout (sm and below) - Horizontal Scroll */}
+          <div className="md:hidden">
+            {/* Session Headers - Mobile */}
+            <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory">
+              <div className="flex-shrink-0 w-20 text-xs font-medium text-gray-600 snap-start">Market</div>
+              {TRADING_SESSIONS.map(session => (
+                <div key={session.name} className="flex-shrink-0 w-20 text-center snap-start">
+                  <div className="text-xs font-medium text-gray-700">{session.label}</div>
+                  <div className="text-xs text-gray-500">{session.utcRange}</div>
+                </div>
+              ))}
+            </div>
 
-                return (
-                  <Tooltip key={`${market}-${slot.range}`}>
-                    <TooltipTrigger asChild>
-                      <div
-                        className={`
-                          h-12 lg:h-16 rounded-lg flex items-center justify-center 
-                          cursor-pointer transition-all duration-200 
-                          hover:scale-105 hover:shadow-md
-                          ${getIntensityColor(totalEvents)}
-                        `}
-                        onClick={() => navigate(`/admin/breaches?market=${market}&timeSlot=${slot.range}`)}
-                      >
-                        <div className="text-center">
-                          <div className={`text-sm lg:text-lg font-bold ${getTextColor(totalEvents)}`}>
-                            {totalEvents || '0'}
-                          </div>
-                          <div className={`text-xs ${getTextColor(totalEvents)}`}>
-                            events
+            {/* Market Rows - Mobile */}
+            {markets.map(market => (
+              <div key={market} className="flex gap-2 items-center overflow-x-auto snap-x snap-mandatory py-1">
+                <div className="flex-shrink-0 w-20 text-xs font-medium text-gray-700 snap-start">
+                  {market}
+                </div>
+                {TRADING_SESSIONS.map(session => {
+                  const totalEvents = getSessionEvents(heatmapData, market, session);
+
+                  return (
+                    <Tooltip key={`${market}-${session.name}`}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={`
+                            flex-shrink-0 w-20 h-12 rounded-lg flex items-center justify-center 
+                            cursor-pointer transition-all duration-200 
+                            hover:scale-105 hover:shadow-md snap-start
+                            ${getIntensityColor(totalEvents)}
+                          `}
+                          onClick={() => navigate(`/admin/breaches?market=${market}&session=${session.name}`)}
+                        >
+                          <div className="text-center">
+                            <div className={`text-sm font-bold ${getTextColor(totalEvents)}`}>
+                              {totalEvents || '0'}
+                            </div>
+                            <div className={`text-xs ${getTextColor(totalEvents)}`}>
+                              events
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{getTooltipText(market, slot.label, slot.range, totalEvents)}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          ))}
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{getTooltipText(session, market, totalEvents)}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Summary Stats */}
