@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,15 +9,24 @@ interface HeatmapChartProps {
   heatmapLoading: boolean;
 }
 
+// Predefined trading sessions - keep the original design
+const TRADING_SESSIONS = [
+  { name: 'Sydney', startHour: 21, endHour: 0 },
+  { name: 'Tokyo', startHour: 0, endHour: 6 },
+  { name: 'London', startHour: 6, endHour: 12 },
+  { name: 'New York', startHour: 12, endHour: 17 },
+  { name: 'After-hours', startHour: 17, endHour: 21 }
+];
+
 const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading }) => {
   const { timeRange } = useDashboardTimeRange();
   
   const getSubtitle = () => {
-    if (timeRange.preset === '24h') return 'Distribution of breach events across markets and time periods (last 24 hours)';
-    if (timeRange.preset === '7d') return 'Distribution of breach events across markets and time periods (last 7 days)';
-    if (timeRange.preset === '30d') return 'Distribution of breach events across markets and time periods (last 30 days)';
-    if (timeRange.preset === '90d') return 'Distribution of breach events across markets and time periods (last 90 days)';
-    return 'Distribution of breach events across markets and time periods (selected period)';
+    if (timeRange.preset === '24h') return 'Distribution of stop-loss events across markets and time periods (last 24 hours)';
+    if (timeRange.preset === '7d') return 'Distribution of stop-loss events across markets and time periods (last 7 days)';
+    if (timeRange.preset === '30d') return 'Distribution of stop-loss events across markets and time periods (last 30 days)';
+    if (timeRange.preset === '90d') return 'Distribution of stop-loss events across markets and time periods (last 90 days)';
+    return 'Distribution of stop-loss events across markets and time periods (selected period)';
   };
 
   if (heatmapLoading) {
@@ -47,19 +55,27 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     );
   }
 
-  const markets = Object.keys(heatmapData.markets);
-  const sessions = heatmapData.sessions;
+  const markets = ['Forex', 'Crypto', 'Indices'];
 
-  const getEventCount = (market: string, session: string) => {
-    const sessionData = sessions.find(s => s.name === session);
-    if (!sessionData) return 0;
-
-    let count = 0;
+  const getEventCount = (market: string, session: { startHour: number; endHour: number }) => {
     const marketData = heatmapData.markets[market] || {};
+    let count = 0;
     
-    // Sum up events within the session's hour range
-    for (let hour = sessionData.startHour; hour <= sessionData.endHour; hour++) {
-      count += marketData[hour] || 0;
+    // Handle sessions that cross midnight (like Sydney 21-0)
+    if (session.startHour > session.endHour) {
+      // Count from startHour to 23
+      for (let hour = session.startHour; hour <= 23; hour++) {
+        count += marketData[hour] || 0;
+      }
+      // Count from 0 to endHour
+      for (let hour = 0; hour <= session.endHour; hour++) {
+        count += marketData[hour] || 0;
+      }
+    } else {
+      // Normal session range
+      for (let hour = session.startHour; hour <= session.endHour; hour++) {
+        count += marketData[hour] || 0;
+      }
     }
     
     return count;
@@ -75,40 +91,30 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
 
   const formatSessionTime = (session: { startHour: number; endHour: number }) => {
     const formatHour = (hour: number) => `${hour.toString().padStart(2, '0')}:00`;
-    return `${formatHour(session.startHour)}-${formatHour(session.endHour)} UTC`;
+    return `${formatHour(session.startHour)}–${formatHour(session.endHour)} UTC`;
   };
 
   const getTotalForMarket = (market: string) => {
     return heatmapData.totalsByMarket[market] || 0;
   };
 
-  const getTotalForSession = (sessionName: string) => {
-    return heatmapData.totalsBySessions[sessionName] || 0;
+  const getTotalForSession = (session: { startHour: number; endHour: number }) => {
+    let total = 0;
+    markets.forEach(market => {
+      total += getEventCount(market, session);
+    });
+    return total;
   };
 
-  const grandTotal = heatmapData.grandTotal;
-  const mostActiveSession = sessions.reduce((max, session) => 
-    getTotalForSession(session.name) > getTotalForSession(max.name) ? session : max
-  , sessions[0] || { name: 'None', startHour: 0, endHour: 0, count: 0 });
+  const grandTotal = heatmapData.grandTotal || 0;
+  
+  const mostActiveSession = TRADING_SESSIONS.reduce((max, session) => 
+    getTotalForSession(session) > getTotalForSession(max) ? session : max
+  , TRADING_SESSIONS[0]);
   
   const mostActiveMarket = markets.reduce((max, market) => 
     getTotalForMarket(market) > getTotalForMarket(max) ? market : max
-  , markets[0] || 'None');
-
-  // Show message if no sessions detected
-  if (sessions.length === 0 || grandTotal === 0) {
-    return (
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
-          <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
-        </div>
-        <div className="h-64 flex items-center justify-center text-muted-foreground">
-          No breach events found for the selected time period
-        </div>
-      </div>
-    );
-  }
+  , markets[0]);
 
   return (
     <div className="space-y-4">
@@ -119,7 +125,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        <span className="font-medium">Event Intensity:</span>
+        <span className="font-medium">Loss Events Intensity:</span>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-gray-100 rounded border"></div>
           <span>None (0)</span>
@@ -146,9 +152,9 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
       <div className="overflow-x-auto">
         <div className="min-w-[800px]">
           {/* Header */}
-          <div className={`grid gap-2 mb-2`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${sessions.length}, 1fr) 120px` }}>
+          <div className={`grid gap-2 mb-2`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${TRADING_SESSIONS.length}, 1fr) 120px` }}>
             <div className="text-sm font-medium text-muted-foreground">Market</div>
-            {sessions.map((session) => (
+            {TRADING_SESSIONS.map((session) => (
               <div key={session.name} className="text-center">
                 <div className="text-sm font-medium">{session.name}</div>
                 <div className="text-xs text-muted-foreground">{formatSessionTime(session)}</div>
@@ -162,10 +168,10 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
 
           {/* Market Rows */}
           {markets.map((market) => (
-            <div key={market} className={`grid gap-2 mb-2`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${sessions.length}, 1fr) 120px` }}>
+            <div key={market} className={`grid gap-2 mb-2`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${TRADING_SESSIONS.length}, 1fr) 120px` }}>
               <div className="flex items-center text-sm font-medium">{market}</div>
-              {sessions.map((session) => {
-                const count = getEventCount(market, session.name);
+              {TRADING_SESSIONS.map((session) => {
+                const count = getEventCount(market, session);
                 return (
                   <div
                     key={session.name}
@@ -184,14 +190,14 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
           ))}
 
           {/* Total Row */}
-          <div className={`grid gap-2 mt-4`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${sessions.length}, 1fr) 120px` }}>
+          <div className={`grid gap-2 mt-4`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${TRADING_SESSIONS.length}, 1fr) 120px` }}>
             <div className="flex items-center text-sm font-medium">Σ Total</div>
-            {sessions.map((session) => (
+            {TRADING_SESSIONS.map((session) => (
               <div
                 key={session.name}
                 className="h-16 rounded-lg border border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-center"
               >
-                <div className="text-lg font-bold">{getTotalForSession(session.name)}</div>
+                <div className="text-lg font-bold">{getTotalForSession(session)}</div>
                 <div className="text-xs text-muted-foreground">total</div>
               </div>
             ))}
