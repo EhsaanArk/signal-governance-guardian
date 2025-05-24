@@ -11,10 +11,10 @@ import HeatmapSummary from './HeatmapSummary';
 
 const HeatmapChart = () => {
   const { getContextualTitle } = useDashboardContext();
-  const { transformedHeatmapData, heatmapLoading, heatmapError } = useDashboardData();
+  const { rawHeatmapData, heatmapLoading, heatmapError } = useDashboardData();
 
   console.log('🔥 HeatmapChart - Loading state:', heatmapLoading);
-  console.log('🔥 HeatmapChart - Data:', transformedHeatmapData);
+  console.log('🔥 HeatmapChart - Raw data:', rawHeatmapData);
 
   if (heatmapLoading) {
     return (
@@ -40,13 +40,16 @@ const HeatmapChart = () => {
     );
   }
 
-  if (!transformedHeatmapData) {
+  if (!rawHeatmapData) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <p className="text-sm">No heatmap data available</p>
       </div>
     );
   }
+
+  // Extract markets from the raw data
+  const markets = Object.keys(rawHeatmapData.markets);
 
   return (
     <div className="space-y-4">
@@ -61,8 +64,8 @@ const HeatmapChart = () => {
         </div>
       </div>
 
-      <HeatmapSummary data={transformedHeatmapData} />
-      <HeatmapTable data={transformedHeatmapData} />
+      <HeatmapSummary heatmapData={rawHeatmapData} markets={markets} />
+      <HeatmapTable heatmapData={rawHeatmapData} markets={markets} />
       <HeatmapLegend />
     </div>
   );
