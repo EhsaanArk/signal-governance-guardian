@@ -16,19 +16,27 @@ const DashboardPage = () => {
           subtitle="Governance at a Glance"
         />
         
-        <main className="flex-1 overflow-auto p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <main className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
+          <div className="w-full max-w-none space-y-4 sm:space-y-6">
             {/* KPI Cards Row */}
-            <DashboardKPICards />
+            <div className="w-full">
+              <DashboardKPICards />
+            </div>
             
             {/* Quick Actions Row */}
-            <DashboardQuickActions />
+            <div className="w-full">
+              <DashboardQuickActions />
+            </div>
             
             {/* Charts Row */}
-            <DashboardCharts />
+            <div className="w-full">
+              <DashboardCharts />
+            </div>
             
             {/* Tables Row */}
-            <DashboardTables />
+            <div className="w-full">
+              <DashboardTables />
+            </div>
           </div>
         </main>
       </div>

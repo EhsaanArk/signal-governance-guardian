@@ -36,12 +36,12 @@ const DashboardQuickActions = () => {
   ];
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="text-lg">Quick Actions</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {actions.map((action, index) => {
             const Icon = action.icon;
             return (
@@ -49,11 +49,11 @@ const DashboardQuickActions = () => {
                 key={index}
                 variant={action.variant}
                 size="sm"
-                className="justify-start"
+                className="justify-start min-w-0"
                 onClick={action.onClick}
               >
-                <Icon className="h-4 w-4 mr-2" />
-                {action.label}
+                <Icon className="h-4 w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">{action.label}</span>
               </Button>
             );
           })}

@@ -17,9 +17,9 @@ const DashboardKPICards = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i}>
+          <Card key={i} className="min-w-0">
             <CardHeader className="pb-3">
               <Skeleton className="h-4 w-24" />
             </CardHeader>
@@ -34,7 +34,7 @@ const DashboardKPICards = () => {
 
   if (error) {
     return (
-      <Card className="col-span-full">
+      <Card className="w-full">
         <CardContent className="p-6">
           <div className="text-center text-muted-foreground">
             <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
@@ -77,7 +77,7 @@ const DashboardKPICards = () => {
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         const isPositive = card.change > 0;
@@ -86,20 +86,20 @@ const DashboardKPICards = () => {
         return (
           <Card 
             key={index} 
-            className="cursor-pointer hover:shadow-md transition-shadow"
+            className="cursor-pointer hover:shadow-md transition-shadow min-w-0"
             onClick={card.onClick}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
                 {card.title}
               </CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
+              <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold">{card.value}</div>
+                <div className="text-xl sm:text-2xl font-bold truncate">{card.value}</div>
                 {hasSignificantChange && (
-                  <div className={`flex items-center text-xs ${
+                  <div className={`flex items-center text-xs flex-shrink-0 ml-2 ${
                     isPositive ? 'text-red-600' : 'text-green-600'
                   }`}>
                     {isPositive ? (
