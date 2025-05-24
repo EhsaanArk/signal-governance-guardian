@@ -11,10 +11,11 @@ export const useDashboardCharts = () => {
 
   console.log('📊 Dashboard charts hook - current filters:', filters);
 
+  const { startDate, endDate, providerId } = getApiDateParams();
+
   const { data: heatmapData, isLoading: heatmapLoading } = useQuery({
-    queryKey: ['dashboard-heatmap', getApiDateParams()],
+    queryKey: ['dashboard-heatmap', startDate, endDate, providerId],
     queryFn: () => {
-      const { startDate, endDate, providerId } = getApiDateParams();
       console.log('🔥 Fetching heatmap with params:', { startDate, endDate, providerId });
       return fetchHeatmapData(startDate, endDate, providerId);
     },
@@ -22,9 +23,8 @@ export const useDashboardCharts = () => {
   });
 
   const { data: topRulesData, isLoading: rulesLoading } = useQuery({
-    queryKey: ['dashboard-top-rules', selectedMarket, getApiDateParams()],
+    queryKey: ['dashboard-top-rules', selectedMarket, startDate, endDate, providerId, filters.timeRange.preset],
     queryFn: () => {
-      const { startDate, endDate, providerId } = getApiDateParams();
       console.log('📈 Fetching top rules with params:', { 
         selectedMarket, 
         startDate, 

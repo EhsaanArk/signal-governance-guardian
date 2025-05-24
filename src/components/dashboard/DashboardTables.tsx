@@ -34,19 +34,19 @@ const DashboardTables = () => {
   const navigate = useNavigate();
   const { getApiDateParams, getDisplayContext } = useDashboardFilters();
 
+  const { startDate, endDate, providerId } = getApiDateParams();
+
   const { data: recentBreaches, isLoading: breachesLoading } = useQuery<RecentBreach[]>({
-    queryKey: ['recent-breaches', getApiDateParams()],
+    queryKey: ['recent-breaches', startDate, endDate, providerId],
     queryFn: () => {
-      const { providerId } = getApiDateParams();
       return fetchRecentBreaches(10);
     },
     refetchInterval: 60000,
   });
 
   const { data: expiringCooldowns, isLoading: cooldownsLoading } = useQuery<ExpiringCooldown[]>({
-    queryKey: ['expiring-cooldowns', getApiDateParams()],
+    queryKey: ['expiring-cooldowns', providerId],
     queryFn: () => {
-      const { providerId } = getApiDateParams();
       return fetchExpiringCooldowns(10);
     },
     refetchInterval: 60000,

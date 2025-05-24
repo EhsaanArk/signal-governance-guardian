@@ -25,10 +25,11 @@ const DashboardKPICards = () => {
   const navigate = useNavigate();
   const { filters, getApiDateParams, getDisplayContext } = useDashboardFilters();
   
+  const { startDate, endDate, providerId } = getApiDateParams();
+  
   const { data: metrics, isLoading, error } = useQuery({
-    queryKey: ['dashboard-metrics', getApiDateParams()],
+    queryKey: ['dashboard-metrics', startDate, endDate, providerId],
     queryFn: () => {
-      const { startDate, endDate, providerId } = getApiDateParams();
       return fetchDashboardMetrics(startDate, endDate, providerId);
     },
     refetchInterval: 30000,
