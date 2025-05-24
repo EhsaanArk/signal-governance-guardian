@@ -5,17 +5,17 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePickerWithRange } from '@/components/common/DatePickerWithRange';
-import { useDashboardTimeRange, TIME_RANGE_PRESETS, TimeRangePreset } from '@/hooks/useDashboardTimeRange';
+import { useDashboardFilters, TIME_RANGE_PRESETS, TimeRangePreset } from '@/hooks/useDashboardFilters';
 import { DateRange } from 'react-day-picker';
 import { useToast } from '@/hooks/use-toast';
 
 const TimeRangeSelector = () => {
-  const { timeRange, setPreset, setCustomRange, getDisplayLabel, isCustomRange } = useDashboardTimeRange();
+  const { filters, setTimeRangePreset, setCustomTimeRange, getTimeRangeDisplayLabel, isCustomTimeRange } = useDashboardFilters();
   const { toast } = useToast();
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>({
-    from: timeRange.from,
-    to: timeRange.to
+    from: filters.timeRange.from,
+    to: filters.timeRange.to
   });
 
   const handlePresetChange = (value: string) => {
@@ -24,7 +24,7 @@ const TimeRangeSelector = () => {
     if (preset === 'custom') {
       setCustomDialogOpen(true);
     } else {
-      setPreset(preset);
+      setTimeRangePreset(preset);
     }
   };
 
@@ -39,7 +39,7 @@ const TimeRangeSelector = () => {
     }
 
     try {
-      setCustomRange(tempDateRange.from, tempDateRange.to);
+      setCustomTimeRange(tempDateRange.from, tempDateRange.to);
       setCustomDialogOpen(false);
       toast({
         title: "Custom Range Applied",
@@ -56,8 +56,8 @@ const TimeRangeSelector = () => {
 
   const handleCustomRangeCancel = () => {
     setTempDateRange({
-      from: timeRange.from,
-      to: timeRange.to
+      from: filters.timeRange.from,
+      to: filters.timeRange.to
     });
     setCustomDialogOpen(false);
   };
@@ -68,7 +68,7 @@ const TimeRangeSelector = () => {
       
       {/* Desktop Select */}
       <div className="hidden md:block">
-        <Select value={timeRange.preset} onValueChange={handlePresetChange}>
+        <Select value={filters.timeRange.preset} onValueChange={handlePresetChange}>
           <SelectTrigger className="w-48 h-8" aria-label="Select reporting period">
             <SelectValue />
           </SelectTrigger>
@@ -93,14 +93,14 @@ const TimeRangeSelector = () => {
         >
           <Calendar className="h-4 w-4 mr-1" />
           <span className="truncate max-w-24">
-            {isCustomRange ? 'Custom' : TIME_RANGE_PRESETS[timeRange.preset].label}
+            {isCustomTimeRange ? 'Custom' : TIME_RANGE_PRESETS[filters.timeRange.preset].label}
           </span>
           <ChevronDown className="h-3 w-3 ml-1" />
         </Button>
       </div>
 
       {/* Visual indicator for non-default ranges */}
-      {timeRange.preset !== '24h' && (
+      {filters.timeRange.preset !== '24h' && (
         <div className="w-2 h-2 rounded-full bg-blue-500" title="Viewing historical period" />
       )}
 
@@ -119,10 +119,10 @@ const TimeRangeSelector = () => {
                 {Object.entries(TIME_RANGE_PRESETS).filter(([key]) => key !== 'custom').map(([key, config]) => (
                   <Button
                     key={key}
-                    variant={timeRange.preset === key ? "default" : "outline"}
+                    variant={filters.timeRange.preset === key ? "default" : "outline"}
                     size="sm"
                     onClick={() => {
-                      setPreset(key as TimeRangePreset);
+                      setTimeRangePreset(key as TimeRangePreset);
                       setCustomDialogOpen(false);
                     }}
                   >

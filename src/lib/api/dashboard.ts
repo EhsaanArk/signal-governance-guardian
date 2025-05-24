@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Market } from '@/types/database';
 
@@ -45,8 +44,8 @@ export interface ExpiringCooldown {
   expires_at: string;
 }
 
-export async function fetchDashboardMetrics(startDate?: string, endDate?: string): Promise<DashboardMetrics> {
-  console.log('📊 Fetching dashboard metrics...', { startDate, endDate });
+export async function fetchDashboardMetrics(startDate?: string, endDate?: string, providerId?: string): Promise<DashboardMetrics> {
+  console.log('📊 Fetching dashboard metrics...', { startDate, endDate, providerId });
 
   // Default to last 24h if no dates provided
   const now = new Date();
@@ -59,39 +58,59 @@ export async function fetchDashboardMetrics(startDate?: string, endDate?: string
   const compareStart = new Date(new Date(defaultStart).getTime() - mainDuration).toISOString();
 
   try {
-    // Active cooldowns (current, not affected by date range)
-    const { data: cooldowns, error: cooldownError } = await supabase
+    // Active cooldowns (current, optionally filtered by provider)
+    let cooldownQuery = supabase
       .from('active_cooldowns')
       .select('id')
       .eq('status', 'active');
+    
+    if (providerId) {
+      cooldownQuery = cooldownQuery.eq('provider_id', providerId);
+    }
 
+    const { data: cooldowns, error: cooldownError } = await cooldownQuery;
     if (cooldownError) throw cooldownError;
 
     // Main period breaches
-    const { data: breachesMain, error: breachMainError } = await supabase
+    let breachMainQuery = supabase
       .from('breach_events')
       .select('id')
       .gte('occurred_at', defaultStart)
       .lte('occurred_at', defaultEnd);
+    
+    if (providerId) {
+      breachMainQuery = breachMainQuery.eq('provider_id', providerId);
+    }
 
+    const { data: breachesMain, error: breachMainError } = await breachMainQuery;
     if (breachMainError) throw breachMainError;
 
     // Comparison period breaches
-    const { data: breachesCompare, error: breachCompareError } = await supabase
+    let breachCompareQuery = supabase
       .from('breach_events')
       .select('id')
       .gte('occurred_at', compareStart)
       .lt('occurred_at', compareEnd);
+    
+    if (providerId) {
+      breachCompareQuery = breachCompareQuery.eq('provider_id', providerId);
+    }
 
+    const { data: breachesCompare, error: breachCompareError } = await breachCompareQuery;
     if (breachCompareError) throw breachCompareError;
 
     // Win rate calculation from provider statistics
-    const { data: stats, error: statsError } = await supabase
+    let statsQuery = supabase
       .from('provider_statistics')
       .select('profitable_closes, sl_count')
       .gte('updated_at', defaultStart)
       .lte('updated_at', defaultEnd);
+    
+    if (providerId) {
+      statsQuery = statsQuery.eq('provider_id', providerId);
+    }
 
+    const { data: stats, error: statsError } = await statsQuery;
     if (statsError) throw statsError;
 
     const totalWins = stats?.reduce((sum, stat) => sum + stat.profitable_closes, 0) || 0;
@@ -112,7 +131,8 @@ export async function fetchDashboardMetrics(startDate?: string, endDate?: string
       breaches: mainBreachCount,
       winRate,
       providersInReview,
-      breachChange
+      breachChange,
+      providerId
     });
 
     return {
@@ -131,20 +151,25 @@ export async function fetchDashboardMetrics(startDate?: string, endDate?: string
   }
 }
 
-export async function fetchHeatmapData(startDate?: string, endDate?: string): Promise<HeatmapData> {
-  console.log('📈 Fetching heatmap data...', { startDate, endDate });
+export async function fetchHeatmapData(startDate?: string, endDate?: string, providerId?: string): Promise<HeatmapData> {
+  console.log('📈 Fetching heatmap data...', { startDate, endDate, providerId });
 
   const defaultEnd = endDate || new Date().toISOString();
   const defaultStart = startDate || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   try {
-    const { data: breaches, error } = await supabase
+    let query = supabase
       .from('breach_events')
       .select('occurred_at, market')
       .gte('occurred_at', defaultStart)
       .lte('occurred_at', defaultEnd)
       .eq('action_taken', 'signal_rejected'); // Assuming this represents SL events
 
+    if (providerId) {
+      query = query.eq('provider_id', providerId);
+    }
+
+    const { data: breaches, error } = await query;
     if (error) throw error;
 
     // Process data into heatmap format
@@ -173,8 +198,8 @@ export async function fetchHeatmapData(startDate?: string, endDate?: string): Pr
   }
 }
 
-export async function fetchTopBreachedRules(market?: Market | 'All', startDate?: string, endDate?: string): Promise<TopBreachedRule[]> {
-  console.log('📊 Fetching top breached rules...', { market, startDate, endDate });
+export async function fetchTopBreachedRules(market?: Market | 'All', startDate?: string, endDate?: string, providerId?: string): Promise<TopBreachedRule[]> {
+  console.log('📊 Fetching top breached rules...', { market, startDate, endDate, providerId });
 
   const now = new Date();
   const defaultEnd = endDate || now.toISOString();
@@ -210,6 +235,12 @@ export async function fetchTopBreachedRules(market?: Market | 'All', startDate?:
     if (market && market !== 'All') {
       currentQuery = currentQuery.eq('market', market);
       previousQuery = previousQuery.eq('market', market);
+    }
+
+    // Apply provider filter if specified
+    if (providerId) {
+      currentQuery = currentQuery.eq('provider_id', providerId);
+      previousQuery = previousQuery.eq('provider_id', providerId);
     }
 
     const [currentResult, previousResult] = await Promise.all([
@@ -286,8 +317,8 @@ export async function fetchTopBreachedRules(market?: Market | 'All', startDate?:
   }
 }
 
-export async function fetchRecentBreaches(limit: number = 10, startDate?: string, endDate?: string): Promise<RecentBreach[]> {
-  console.log('📋 Fetching recent breaches...', { limit, startDate, endDate });
+export async function fetchRecentBreaches(limit: number = 10, startDate?: string, endDate?: string, providerId?: string): Promise<RecentBreach[]> {
+  console.log('📋 Fetching recent breaches...', { limit, startDate, endDate, providerId });
 
   try {
     let query = supabase
@@ -303,16 +334,17 @@ export async function fetchRecentBreaches(limit: number = 10, startDate?: string
       .order('occurred_at', { ascending: false })
       .limit(limit);
 
-    // Apply date filter if provided
     if (startDate) {
       query = query.gte('occurred_at', startDate);
     }
     if (endDate) {
       query = query.lte('occurred_at', endDate);
     }
+    if (providerId) {
+      query = query.eq('provider_id', providerId);
+    }
 
     const { data: breaches, error } = await query;
-
     if (error) throw error;
 
     const recentBreaches: RecentBreach[] = breaches?.map(breach => ({
@@ -332,11 +364,11 @@ export async function fetchRecentBreaches(limit: number = 10, startDate?: string
   }
 }
 
-export async function fetchExpiringCooldowns(limit: number = 10): Promise<ExpiringCooldown[]> {
-  console.log('⏰ Fetching expiring cooldowns...', { limit });
+export async function fetchExpiringCooldowns(limit: number = 10, providerId?: string): Promise<ExpiringCooldown[]> {
+  console.log('⏰ Fetching expiring cooldowns...', { limit, providerId });
 
   try {
-    const { data: cooldowns, error } = await supabase
+    let query = supabase
       .from('active_cooldowns')
       .select(`
         id,
@@ -348,6 +380,11 @@ export async function fetchExpiringCooldowns(limit: number = 10): Promise<Expiri
       .order('expires_at', { ascending: true })
       .limit(limit);
 
+    if (providerId) {
+      query = query.eq('provider_id', providerId);
+    }
+
+    const { data: cooldowns, error } = await query;
     if (error) throw error;
 
     const expiringCooldowns: ExpiringCooldown[] = cooldowns?.map(cooldown => ({

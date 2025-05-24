@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,7 @@ import { fetchExpiringCooldowns } from '@/lib/api/cooldowns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import ComplianceTooltip from '@/components/common/ComplianceTooltip';
-import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
+import { useDashboardFilters } from '@/hooks/useDashboardFilters';
 
 interface RecentBreach {
   id: string;
@@ -31,17 +32,23 @@ interface ExpiringCooldown {
 
 const DashboardTables = () => {
   const navigate = useNavigate();
-  const { getApiDateParams } = useDashboardTimeRange();
+  const { getApiDateParams, getDisplayContext } = useDashboardFilters();
 
   const { data: recentBreaches, isLoading: breachesLoading } = useQuery<RecentBreach[]>({
     queryKey: ['recent-breaches', getApiDateParams()],
-    queryFn: () => fetchRecentBreaches(10),
+    queryFn: () => {
+      const { providerId } = getApiDateParams();
+      return fetchRecentBreaches(10);
+    },
     refetchInterval: 60000,
   });
 
   const { data: expiringCooldowns, isLoading: cooldownsLoading } = useQuery<ExpiringCooldown[]>({
-    queryKey: ['expiring-cooldowns'],
-    queryFn: () => fetchExpiringCooldowns(10),
+    queryKey: ['expiring-cooldowns', getApiDateParams()],
+    queryFn: () => {
+      const { providerId } = getApiDateParams();
+      return fetchExpiringCooldowns(10);
+    },
     refetchInterval: 60000,
   });
 
@@ -59,7 +66,11 @@ const DashboardTables = () => {
 
   const handleEndCooldown = (cooldownId: string) => {
     console.log('Ending cooldown:', cooldownId);
-    // This would typically open a modal for reason input and audit logging
+  };
+
+  const getContextualTitle = (baseTitle: string) => {
+    const context = getDisplayContext();
+    return context ? `${baseTitle} ${context}` : baseTitle;
   };
 
   return (
@@ -68,7 +79,9 @@ const DashboardTables = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle className="text-base lg:text-lg">Recent Breaches</CardTitle>
+            <CardTitle className="text-base lg:text-lg">
+              {getContextualTitle('Recent Breaches')}
+            </CardTitle>
             <p className="text-xs lg:text-sm text-muted-foreground">Latest rule violations in selected period</p>
           </div>
           <Button 
@@ -125,7 +138,9 @@ const DashboardTables = () => {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
           <div>
-            <CardTitle className="text-base lg:text-lg">Expiring Cooldowns</CardTitle>
+            <CardTitle className="text-base lg:text-lg">
+              {getContextualTitle('Expiring Cooldowns')}
+            </CardTitle>
             <p className="text-xs lg:text-sm text-muted-foreground">Active cooling periods</p>
           </div>
           <Button 

@@ -7,7 +7,7 @@ import { ArrowUp, ArrowDown, Clock, AlertTriangle, TrendingUp, Users } from 'luc
 import { fetchDashboardMetrics } from '@/lib/api/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
-import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
+import { useDashboardFilters } from '@/hooks/useDashboardFilters';
 
 interface KPICard {
   title: string;
@@ -23,19 +23,19 @@ interface KPICard {
 
 const DashboardKPICards = () => {
   const navigate = useNavigate();
-  const { getApiDateParams, timeRange } = useDashboardTimeRange();
+  const { filters, getApiDateParams, getDisplayContext } = useDashboardFilters();
   
   const { data: metrics, isLoading, error } = useQuery({
     queryKey: ['dashboard-metrics', getApiDateParams()],
     queryFn: () => {
-      const { startDate, endDate } = getApiDateParams();
-      return fetchDashboardMetrics(startDate, endDate);
+      const { startDate, endDate, providerId } = getApiDateParams();
+      return fetchDashboardMetrics(startDate, endDate, providerId);
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 
   const getTimeLabel = () => {
-    switch (timeRange.preset) {
+    switch (filters.timeRange.preset) {
       case '24h': return '24-h';
       case '7d': return '7-d';
       case '30d': return '30-d';
@@ -46,7 +46,7 @@ const DashboardKPICards = () => {
   };
 
   const getPeriodLabel = () => {
-    switch (timeRange.preset) {
+    switch (filters.timeRange.preset) {
       case '24h': return 'last 24 hours';
       case '7d': return 'last 7 days';
       case '30d': return 'last 30 days';
@@ -54,6 +54,11 @@ const DashboardKPICards = () => {
       case 'custom': return 'selected period';
       default: return 'last 24 hours';
     }
+  };
+
+  const getProviderContext = () => {
+    const context = getDisplayContext();
+    return context ? ` ${context}` : '';
   };
 
   if (isLoading) {
@@ -89,40 +94,43 @@ const DashboardKPICards = () => {
   const cards: KPICard[] = [
     {
       title: 'Active Cool-downs',
-      tooltip: 'Sum of unique providers currently in any cooldown period',
+      tooltip: `Sum of unique providers currently in any cooldown period${getProviderContext()}`,
       value: metrics?.activeCooldowns || 0,
       icon: Clock,
       change: metrics?.cooldownChange || 0,
-      isGoodWhenIncreasing: false, // Bad when increasing
+      isGoodWhenIncreasing: false,
       onClick: () => navigate('/admin/cooldowns'),
     },
     {
       title: `${getTimeLabel()} Breaches`,
-      tooltip: `Total number of rule breaches detected in the ${getPeriodLabel()}`,
+      tooltip: `Total number of rule breaches detected in the ${getPeriodLabel()}${getProviderContext()}`,
       value: metrics?.breaches24h || 0,
       icon: AlertTriangle,
       change: metrics?.breachChange || 0,
-      isGoodWhenIncreasing: false, // Bad when increasing
+      isGoodWhenIncreasing: false,
       onClick: () => {
         const params = new URLSearchParams();
-        if (timeRange.preset !== '24h') {
-          params.set('from', timeRange.from.toISOString().split('T')[0]);
-          params.set('to', timeRange.to.toISOString().split('T')[0]);
+        if (filters.timeRange.preset !== '24h') {
+          params.set('from', filters.timeRange.from.toISOString().split('T')[0]);
+          params.set('to', filters.timeRange.to.toISOString().split('T')[0]);
         } else {
           params.set('period', '24h');
+        }
+        if (filters.provider.providerId) {
+          params.set('provider', filters.provider.providerId);
         }
         navigate(`/admin/breaches?${params.toString()}`);
       },
     },
     {
       title: `${getTimeLabel()} Win-rate`,
-      tooltip: `Percentage of profitable trades executed in the ${getPeriodLabel()}`,
+      tooltip: `Percentage of profitable trades executed in the ${getPeriodLabel()}${getProviderContext()}`,
       value: `${metrics?.winRate24h || 0}%`,
       displayValue: metrics?.winRate24h || 0,
       timeLabel: getTimeLabel(),
       icon: TrendingUp,
       change: metrics?.winRateChange || 0,
-      isGoodWhenIncreasing: true, // Good when increasing
+      isGoodWhenIncreasing: true,
       onClick: () => navigate('/admin/providers?sort=winrate'),
     },
     {
@@ -131,7 +139,7 @@ const DashboardKPICards = () => {
       value: metrics?.providersInReview || 0,
       icon: Users,
       change: metrics?.reviewChange || 0,
-      isGoodWhenIncreasing: false, // Bad when increasing
+      isGoodWhenIncreasing: false,
       onClick: () => navigate('/admin/providers?status=review'),
     },
   ];
