@@ -1,36 +1,22 @@
 
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ArrowUp, ArrowDown } from 'lucide-react';
-import { DashboardService } from '@/lib/api/dashboardService';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardContext } from '@/hooks/useDashboardContext';
-import { queryKeys, defaultQueryOptions } from '@/lib/utils/queryKeys';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { KPIMetricsService } from '@/lib/services/KPIMetricsService';
 import { NavigationService } from '@/lib/services/NavigationService';
-import { AlertTriangle } from 'lucide-react';
+import KPICardPresentation from './presentation/KPICardPresentation';
 
 const DashboardKPICards = () => {
   const navigate = useNavigate();
-  const { filters, getApiDateParams, context } = useDashboardContext();
-  
-  const { startDate, endDate, providerId } = getApiDateParams();
+  const { filters, context } = useDashboardContext();
+  const { rawMetrics, metricsLoading, metricsError } = useDashboardData();
   
   console.log('📊 KPI Cards - Filter state:', filters);
-  console.log('📊 KPI Cards - API params:', { startDate, endDate, providerId });
-  
-  const { data: metrics, isLoading, error } = useQuery({
-    queryKey: queryKeys.dashboard.metrics(startDate, endDate, providerId, filters.timeRange.preset),
-    queryFn: () => {
-      console.log('📊 Fetching KPI metrics with params:', { startDate, endDate, providerId });
-      return DashboardService.fetchMetrics({ startDate, endDate, providerId });
-    },
-    ...defaultQueryOptions,
-    refetchInterval: 30000,
-  });
 
   const navigationHandlers = {
     navigateToCooldowns: () => navigate('/admin/cooldowns'),
@@ -42,15 +28,13 @@ const DashboardKPICards = () => {
     navigateToProvidersReview: () => navigate(NavigationService.buildProvidersUrl({ status: 'review' }))
   };
 
-  if (isLoading) {
+  if (metricsLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="min-w-0">
-            <CardHeader className="pb-3">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
+              <Skeleton className="h-4 w-24 mb-2" />
               <Skeleton className="h-8 w-16" />
             </CardContent>
           </Card>
@@ -59,7 +43,7 @@ const DashboardKPICards = () => {
     );
   }
 
-  if (error) {
+  if (metricsError) {
     return (
       <Card className="w-full">
         <CardContent className="p-6">
@@ -72,59 +56,22 @@ const DashboardKPICards = () => {
     );
   }
 
-  const cards = KPIMetricsService.buildKPICards(metrics, context, navigationHandlers);
+  const cards = KPIMetricsService.buildKPICards(rawMetrics, context, navigationHandlers);
 
   return (
     <TooltipProvider>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
         {cards.map((card, index) => {
-          const Icon = card.icon;
-          const isPositive = card.change > 0;
           const hasSignificantChange = KPIMetricsService.hasSignificantChange(card.change);
           const deltaColor = KPIMetricsService.getDeltaColor(card.change, card.isGoodWhenIncreasing);
           
           return (
-            <Card 
-              key={index} 
-              className="cursor-pointer hover:shadow-md transition-shadow min-w-0"
-              onClick={card.onClick}
-            >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate cursor-help">
-                      {card.title}
-                    </CardTitle>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="max-w-xs">{card.tooltip}</p>
-                  </TooltipContent>
-                </Tooltip>
-                <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    {card.timeLabel && (
-                      <div className="text-xs text-muted-foreground mb-1">{card.timeLabel}</div>
-                    )}
-                    <div className="text-xl sm:text-2xl font-bold truncate">
-                      {typeof card.displayValue === 'number' ? `${card.displayValue}%` : card.value}
-                    </div>
-                  </div>
-                  {hasSignificantChange && (
-                    <div className={`flex items-center text-xs flex-shrink-0 ml-2 ${deltaColor}`}>
-                      {isPositive ? (
-                        <ArrowUp className="h-3 w-3 mr-1" />
-                      ) : (
-                        <ArrowDown className="h-3 w-3 mr-1" />
-                      )}
-                      {Math.abs(card.change)}%
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <KPICardPresentation
+              key={index}
+              card={card}
+              hasSignificantChange={hasSignificantChange}
+              deltaColor={deltaColor}
+            />
           );
         })}
       </div>

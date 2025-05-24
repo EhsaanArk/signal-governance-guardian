@@ -5,6 +5,7 @@ import { DashboardService } from '@/lib/api/dashboardService';
 import { Market } from '@/types/database';
 import { useDashboardContext } from './useDashboardContext';
 import { queryKeys, defaultQueryOptions } from '@/lib/utils/queryKeys';
+import { DashboardDataTransformers } from '@/lib/transformers/DashboardDataTransformers';
 
 export const useDashboardCharts = () => {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
@@ -14,16 +15,7 @@ export const useDashboardCharts = () => {
 
   const { startDate, endDate, providerId } = getApiDateParams();
 
-  const { data: heatmapData, isLoading: heatmapLoading } = useQuery({
-    queryKey: queryKeys.dashboard.heatmap(startDate, endDate, providerId, filters.timeRange.preset),
-    queryFn: () => {
-      console.log('🔥 Fetching heatmap with params:', { startDate, endDate, providerId });
-      return DashboardService.fetchHeatmapData({ startDate, endDate, providerId });
-    },
-    ...defaultQueryOptions,
-  });
-
-  const { data: topRulesData, isLoading: rulesLoading } = useQuery({
+  const { data: rawTopRulesData, isLoading: rulesLoading } = useQuery({
     queryKey: queryKeys.dashboard.topRules(selectedMarket, startDate, endDate, providerId, filters.timeRange.preset),
     queryFn: () => {
       console.log('📈 Fetching top rules with params:', { 
@@ -38,11 +30,22 @@ export const useDashboardCharts = () => {
     ...defaultQueryOptions,
   });
 
+  // Transform the top rules data
+  const transformedTopRulesData = rawTopRulesData 
+    ? DashboardDataTransformers.transformTopRulesData(rawTopRulesData)
+    : undefined;
+
   return {
-    heatmapData,
-    heatmapLoading,
-    topRulesData,
+    // Raw data
+    topRulesData: rawTopRulesData,
+    
+    // Transformed data  
+    transformedTopRulesData,
+    
+    // Loading states
     rulesLoading,
+    
+    // UI state
     selectedMarket,
     setSelectedMarket,
   };

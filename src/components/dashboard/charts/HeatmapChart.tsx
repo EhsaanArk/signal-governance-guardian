@@ -1,19 +1,15 @@
 
 import React from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { HeatmapData } from '@/lib/api/dashboard';
 import { useDashboardTimeRange } from '@/hooks/useDashboardTimeRange';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import HeatmapLegend from './HeatmapLegend';
 import HeatmapTable from './HeatmapTable';
 import HeatmapSummary from './HeatmapSummary';
 
-interface HeatmapChartProps {
-  heatmapData: HeatmapData | undefined;
-  heatmapLoading: boolean;
-}
-
-const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading }) => {
+const HeatmapChart: React.FC = () => {
   const { timeRange } = useDashboardTimeRange();
+  const { rawHeatmapData, transformedHeatmapData, heatmapLoading } = useDashboardData();
   
   const getSubtitle = () => {
     if (timeRange.preset === '24h') return 'Distribution of stop-loss events across markets and time periods (last 24 hours)';
@@ -35,7 +31,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     );
   }
 
-  if (!heatmapData) {
+  if (!rawHeatmapData || !transformedHeatmapData) {
     return (
       <div className="space-y-4">
         <div>
@@ -49,8 +45,6 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     );
   }
 
-  const markets = ['Forex', 'Crypto', 'Indices'];
-
   return (
     <div className="space-y-4">
       <div>
@@ -59,8 +53,8 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
       </div>
 
       <HeatmapLegend />
-      <HeatmapTable heatmapData={heatmapData} markets={markets} />
-      <HeatmapSummary heatmapData={heatmapData} markets={markets} />
+      <HeatmapTable heatmapData={rawHeatmapData} markets={transformedHeatmapData.markets} />
+      <HeatmapSummary heatmapData={rawHeatmapData} markets={transformedHeatmapData.markets} />
     </div>
   );
 };
