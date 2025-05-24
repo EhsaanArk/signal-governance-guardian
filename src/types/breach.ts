@@ -3,6 +3,9 @@ import { DateRange } from 'react-day-picker';
 import { Market } from '@/types/database';
 import { TimeRangePreset } from '@/components/breaches/TimeRangeSelector';
 
+export type RuleType = 'CO' | 'GD' | 'AC' | 'PC';
+export type ActionType = 'paused' | 'rejected' | 'suspended';
+
 export interface BreachEventFilters {
   selectedMarket: Market | 'All';
   providerSearch: string;
@@ -11,6 +14,8 @@ export interface BreachEventFilters {
   timeRangePreset?: TimeRangePreset;
   providerId?: string | null;
   providerName?: string | null;
+  selectedRuleTypes?: RuleType[];
+  selectedActions?: ActionType[];
 }
 
 export interface TransformedBreachEvent {
@@ -23,6 +28,8 @@ export interface TransformedBreachEvent {
   subRule: string;
   action: string;
   details: string;
+  ruleType?: RuleType;
+  actionType?: ActionType;
 }
 
 export interface RawBreachEvent {
@@ -34,4 +41,6 @@ export interface RawBreachEvent {
   sub_rule_id: string;
   action_taken: string;
   details: any;
+  rule_type?: string;
+  action_type?: string;
 }

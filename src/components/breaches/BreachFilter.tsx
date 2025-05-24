@@ -13,9 +13,12 @@ import MarketChip from '../common/MarketChip';
 import TimeRangeSelector from './TimeRangeSelector';
 import ProviderSelector from './ProviderSelector';
 import FilterClearButton from './FilterClearButton';
+import RuleTypeFilter from './RuleTypeFilter';
+import ActionFilter from './ActionFilter';
 import { Market } from '@/types/database';
 import { DateRange } from 'react-day-picker';
 import { TimeRangePreset } from './TimeRangeSelector';
+import { RuleType, ActionType } from '@/types/breach';
 
 interface BreachFilterProps {
   selectedMarket: Market | 'All';
@@ -25,6 +28,8 @@ interface BreachFilterProps {
   dateRange: DateRange | undefined;
   selectedProviderId: string | null;
   selectedProviderName: string | null;
+  selectedRuleTypes: RuleType[];
+  selectedActions: ActionType[];
   hasActiveFilters: boolean;
   ruleSets: Array<{ id: string; name: string }>;
   onMarketChange: (market: Market | 'All') => void;
@@ -33,6 +38,8 @@ interface BreachFilterProps {
   onTimeRangePresetChange: (preset: TimeRangePreset) => void;
   onCustomDateRangeChange: (range: DateRange | undefined) => void;
   onProviderChange: (providerId: string | null, providerName: string | null) => void;
+  onRuleTypeChange: (ruleTypes: RuleType[]) => void;
+  onActionChange: (actions: ActionType[]) => void;
   onClearFilters: () => void;
 }
 
@@ -44,6 +51,8 @@ const BreachFilter: React.FC<BreachFilterProps> = ({
   dateRange,
   selectedProviderId,
   selectedProviderName,
+  selectedRuleTypes,
+  selectedActions,
   hasActiveFilters,
   ruleSets,
   onMarketChange,
@@ -52,6 +61,8 @@ const BreachFilter: React.FC<BreachFilterProps> = ({
   onTimeRangePresetChange,
   onCustomDateRangeChange,
   onProviderChange,
+  onRuleTypeChange,
+  onActionChange,
   onClearFilters
 }) => {
   const markets: (Market | 'All')[] = ['All', 'Forex', 'Crypto', 'Indices'];
@@ -124,6 +135,18 @@ const BreachFilter: React.FC<BreachFilterProps> = ({
             onClick={() => onMarketChange(market)}
           />
         ))}
+      </div>
+
+      {/* Third Row: Rule Type and Action Filters */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        <RuleTypeFilter
+          selectedRuleTypes={selectedRuleTypes}
+          onRuleTypeChange={onRuleTypeChange}
+        />
+        <ActionFilter
+          selectedActions={selectedActions}
+          onActionChange={onActionChange}
+        />
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 import { BreachEventFilters, RawBreachEvent } from '@/types/breach';
 
 export class BreachFilters {
@@ -75,6 +74,51 @@ export class BreachFilters {
     const beforeRuleSetFilter = breaches.length;
     const filtered = breaches.filter(breach => breach.rule_set_id === selectedRuleSet);
     console.log(`Rule set filter (${selectedRuleSet}): ${beforeRuleSetFilter} -> ${filtered.length} events`);
+    return filtered;
+  }
+
+  static applyRuleTypeFilter(breaches: RawBreachEvent[], selectedRuleTypes: string[]): RawBreachEvent[] {
+    if (selectedRuleTypes.length === 0) {
+      return breaches;
+    }
+
+    const beforeRuleTypeFilter = breaches.length;
+    const filtered = breaches.filter(breach => {
+      // Map database rule_type to our filter types
+      const ruleTypeMapping: Record<string, string> = {
+        'cooling_off': 'CO',
+        'guard': 'GD', 
+        'active_cap': 'AC',
+        'positive_cancel': 'PC'
+      };
+      
+      const mappedRuleType = ruleTypeMapping[breach.rule_type || ''];
+      return mappedRuleType && selectedRuleTypes.includes(mappedRuleType);
+    });
+    
+    console.log(`Rule type filter (${selectedRuleTypes.join(', ')}): ${beforeRuleTypeFilter} -> ${filtered.length} events`);
+    return filtered;
+  }
+
+  static applyActionFilter(breaches: RawBreachEvent[], selectedActions: string[]): RawBreachEvent[] {
+    if (selectedActions.length === 0) {
+      return breaches;
+    }
+
+    const beforeActionFilter = breaches.length;
+    const filtered = breaches.filter(breach => {
+      // Map database action_taken to our filter types
+      const actionMapping: Record<string, string> = {
+        'cooldown_triggered': 'paused',
+        'signal_rejected': 'rejected',
+        'provider_suspended': 'suspended'
+      };
+      
+      const mappedAction = actionMapping[breach.action_taken || ''];
+      return mappedAction && selectedActions.includes(mappedAction);
+    });
+    
+    console.log(`Action filter (${selectedActions.join(', ')}): ${beforeActionFilter} -> ${filtered.length} events`);
     return filtered;
   }
 

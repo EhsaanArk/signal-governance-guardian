@@ -1,9 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DateRange } from 'react-day-picker';
 import { Market } from '@/types/database';
 import { TimeRangePreset, TIME_RANGE_PRESETS } from '@/components/breaches/TimeRangeSelector';
+import { RuleType, ActionType } from '@/types/breach';
 
 export interface BreachFiltersState {
   timeRangePreset: TimeRangePreset;
@@ -13,6 +13,8 @@ export interface BreachFiltersState {
   market: Market | 'All';
   ruleSetId: string;
   providerSearch: string;
+  selectedRuleTypes: RuleType[];
+  selectedActions: ActionType[];
 }
 
 const getDateRangeFromPreset = (preset: TimeRangePreset): DateRange => {
@@ -59,8 +61,10 @@ export const useBreachFilters = () => {
     const providerNameParam = searchParams.get('providerName');
     const marketParam = searchParams.get('market') as Market | 'All' | null;
     const ruleParam = searchParams.get('rule') || searchParams.get('ruleSet');
+    const ruleTypeParam = searchParams.get('ruleType');
+    const actionParam = searchParams.get('action');
     
-    let timeRangePreset: TimeRangePreset = '24h'; // Back to 24h default as per acceptance criteria
+    let timeRangePreset: TimeRangePreset = '24h';
     let dateRange: DateRange | undefined;
     
     if (fromParam && toParam) {
@@ -73,8 +77,18 @@ export const useBreachFilters = () => {
       timeRangePreset = rangeParam as TimeRangePreset;
       dateRange = getDateRangeFromPreset(timeRangePreset);
     } else {
-      dateRange = getDateRangeFromPreset('24h'); // Back to 24h default
+      dateRange = getDateRangeFromPreset('24h');
     }
+
+    // Parse rule types from URL
+    const selectedRuleTypes: RuleType[] = ruleTypeParam 
+      ? ruleTypeParam.split(',').filter(rt => ['CO', 'GD', 'AC', 'PC'].includes(rt)) as RuleType[]
+      : [];
+
+    // Parse actions from URL
+    const selectedActions: ActionType[] = actionParam 
+      ? actionParam.split(',').filter(a => ['paused', 'rejected', 'suspended'].includes(a)) as ActionType[]
+      : [];
 
     return {
       timeRangePreset,
@@ -83,7 +97,9 @@ export const useBreachFilters = () => {
       providerName: providerNameParam || null,
       market: marketParam || 'All',
       ruleSetId: ruleParam || 'all',
-      providerSearch: ''
+      providerSearch: '',
+      selectedRuleTypes,
+      selectedActions
     };
   });
 
@@ -132,6 +148,20 @@ export const useBreachFilters = () => {
       newSearchParams.delete('ruleSet');
     }
     
+    // Handle rule type params
+    if (updatedFilters.selectedRuleTypes.length > 0) {
+      newSearchParams.set('ruleType', updatedFilters.selectedRuleTypes.join(','));
+    } else {
+      newSearchParams.delete('ruleType');
+    }
+    
+    // Handle action params
+    if (updatedFilters.selectedActions.length > 0) {
+      newSearchParams.set('action', updatedFilters.selectedActions.join(','));
+    } else {
+      newSearchParams.delete('action');
+    }
+    
     setSearchParams(newSearchParams);
   }, [filters, searchParams, setSearchParams]);
 
@@ -164,25 +194,37 @@ export const useBreachFilters = () => {
     updateFilters({ providerSearch });
   }, [updateFilters]);
 
+  const setRuleTypes = useCallback((selectedRuleTypes: RuleType[]) => {
+    updateFilters({ selectedRuleTypes });
+  }, [updateFilters]);
+
+  const setActions = useCallback((selectedActions: ActionType[]) => {
+    updateFilters({ selectedActions });
+  }, [updateFilters]);
+
   const clearAllFilters = useCallback(() => {
-    const defaultDateRange = getDateRangeFromPreset('24h'); // Back to 24h default
+    const defaultDateRange = getDateRangeFromPreset('24h');
     setFilters({
-      timeRangePreset: '24h', // Back to 24h default
+      timeRangePreset: '24h',
       dateRange: defaultDateRange,
       providerId: null,
       providerName: null,
       market: 'All',
       ruleSetId: 'all',
-      providerSearch: ''
+      providerSearch: '',
+      selectedRuleTypes: [],
+      selectedActions: []
     });
     setSearchParams(new URLSearchParams());
   }, [setSearchParams]);
 
   const hasActiveFilters = useCallback(() => {
-    return filters.timeRangePreset !== '24h' || // Back to 24h default comparison
+    return filters.timeRangePreset !== '24h' ||
            filters.providerId !== null ||
            filters.market !== 'All' ||
-           filters.ruleSetId !== 'all';
+           filters.ruleSetId !== 'all' ||
+           filters.selectedRuleTypes.length > 0 ||
+           filters.selectedActions.length > 0;
   }, [filters]);
 
   return {
@@ -193,6 +235,8 @@ export const useBreachFilters = () => {
     setMarket,
     setRuleSet,
     setProviderSearch,
+    setRuleTypes,
+    setActions,
     clearAllFilters,
     hasActiveFilters: hasActiveFilters()
   };
