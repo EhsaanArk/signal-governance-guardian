@@ -104,7 +104,7 @@ const DashboardKPICards = () => {
     {
       title: `${getTimeLabel()} Breaches`,
       tooltip: `Total number of rule breaches detected in the ${getPeriodLabel()}${getProviderContext()}`,
-      value: metrics?.breaches24h || 0,
+      value: metrics?.breaches || 0,
       icon: AlertTriangle,
       change: metrics?.breachChange || 0,
       isGoodWhenIncreasing: false,
@@ -125,8 +125,8 @@ const DashboardKPICards = () => {
     {
       title: `${getTimeLabel()} Win-rate`,
       tooltip: `Percentage of profitable trades executed in the ${getPeriodLabel()}${getProviderContext()}`,
-      value: `${metrics?.winRate24h || 0}%`,
-      displayValue: metrics?.winRate24h || 0,
+      value: `${metrics?.winRate || 0}%`,
+      displayValue: metrics?.winRate || 0,
       timeLabel: getTimeLabel(),
       icon: TrendingUp,
       change: metrics?.winRateChange || 0,

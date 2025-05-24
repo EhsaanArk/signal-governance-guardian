@@ -3,13 +3,16 @@ import { Market } from '@/types/database';
 
 export interface DashboardMetrics {
   activeCooldowns: number;
-  breaches24h: number;
-  winRate24h: number;
+  breaches: number;
+  winRate: number;
   providersInReview: number;
   cooldownChange: number;
   breachChange: number;
   winRateChange: number;
   reviewChange: number;
+  // Keep backwards compatibility
+  breaches24h: number;
+  winRate24h: number;
 }
 
 export interface HeatmapData {
@@ -137,13 +140,16 @@ export async function fetchDashboardMetrics(startDate?: string, endDate?: string
 
     return {
       activeCooldowns: cooldowns?.length || 0,
-      breaches24h: mainBreachCount,
-      winRate24h: winRate,
+      breaches: mainBreachCount,
+      winRate: winRate,
       providersInReview,
       cooldownChange: 0, // Would need historical cooldown data
       breachChange,
       winRateChange: 0, // Would need historical win rate data
       reviewChange: 0, // Would need historical review data
+      // Keep backwards compatibility
+      breaches24h: mainBreachCount,
+      winRate24h: winRate,
     };
   } catch (error) {
     console.error('❌ Error fetching dashboard metrics:', error);
