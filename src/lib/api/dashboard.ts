@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Market } from '@/types/database';
 
@@ -23,6 +22,10 @@ export interface TopBreachedRule {
   ruleSetId: string;
   name: string;
   count: number;
+  percentage: number;
+  previousCount: number;
+  deltaPercentage: number;
+  trendDirection: 'up' | 'down' | 'flat';
 }
 
 export interface RecentBreach {
@@ -158,13 +161,16 @@ export async function fetchHeatmapData(): Promise<HeatmapData> {
   }
 }
 
-export async function fetchTopBreachedRules(): Promise<TopBreachedRule[]> {
-  console.log('📊 Fetching top breached rules...');
+export async function fetchTopBreachedRules(market?: Market | 'All'): Promise<TopBreachedRule[]> {
+  console.log('📊 Fetching top breached rules...', market ? `for market: ${market}` : 'for all markets');
 
-  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const twoDaysAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
   try {
-    const { data: breaches, error: breachError } = await supabase
+    // Current 24h breaches query
+    let currentQuery = supabase
       .from('breach_events')
       .select(`
         rule_set_id,
@@ -172,28 +178,85 @@ export async function fetchTopBreachedRules(): Promise<TopBreachedRule[]> {
       `)
       .gte('occurred_at', yesterday.toISOString());
 
-    if (breachError) throw breachError;
+    // Previous 24h breaches query
+    let previousQuery = supabase
+      .from('breach_events')
+      .select(`
+        rule_set_id,
+        rule_sets(name)
+      `)
+      .gte('occurred_at', twoDaysAgo.toISOString())
+      .lt('occurred_at', yesterday.toISOString());
 
-    // Count breaches by rule set
-    const ruleCounts: { [key: string]: { name: string; count: number } } = {};
-    
-    breaches?.forEach(breach => {
+    // Apply market filter if specified
+    if (market && market !== 'All') {
+      currentQuery = currentQuery.eq('market', market);
+      previousQuery = previousQuery.eq('market', market);
+    }
+
+    const [currentResult, previousResult] = await Promise.all([
+      currentQuery,
+      previousQuery
+    ]);
+
+    if (currentResult.error) throw currentResult.error;
+    if (previousResult.error) throw previousResult.error;
+
+    // Count current breaches by rule set
+    const currentCounts: { [key: string]: { name: string; count: number } } = {};
+    currentResult.data?.forEach(breach => {
       const ruleSetId = breach.rule_set_id;
       const ruleName = (breach.rule_sets as any)?.name || 'Unknown Rule';
       
-      if (!ruleCounts[ruleSetId]) {
-        ruleCounts[ruleSetId] = { name: ruleName, count: 0 };
+      if (!currentCounts[ruleSetId]) {
+        currentCounts[ruleSetId] = { name: ruleName, count: 0 };
       }
-      ruleCounts[ruleSetId].count += 1;
+      currentCounts[ruleSetId].count += 1;
     });
 
-    // Convert to array and sort by count
-    const topRules = Object.entries(ruleCounts)
-      .map(([ruleSetId, { name, count }]) => ({
-        ruleSetId,
-        name,
-        count
-      }))
+    // Count previous breaches by rule set
+    const previousCounts: { [key: string]: number } = {};
+    previousResult.data?.forEach(breach => {
+      const ruleSetId = breach.rule_set_id;
+      previousCounts[ruleSetId] = (previousCounts[ruleSetId] || 0) + 1;
+    });
+
+    // Calculate total current breaches for percentages
+    const totalCurrentBreaches = Object.values(currentCounts).reduce((sum, { count }) => sum + count, 0);
+
+    // Convert to array and calculate trends
+    const topRules = Object.entries(currentCounts)
+      .map(([ruleSetId, { name, count }]) => {
+        const previousCount = previousCounts[ruleSetId] || 0;
+        const percentage = totalCurrentBreaches > 0 ? Math.round((count / totalCurrentBreaches) * 100) : 0;
+        
+        // Calculate trend
+        let deltaPercentage = 0;
+        let trendDirection: 'up' | 'down' | 'flat' = 'flat';
+        
+        if (previousCount > 0) {
+          deltaPercentage = Math.round(((count - previousCount) / previousCount) * 100);
+          if (deltaPercentage >= 10) {
+            trendDirection = 'up';
+          } else if (deltaPercentage <= -10) {
+            trendDirection = 'down';
+          }
+        } else if (count > 0) {
+          // New rule that didn't have breaches before
+          deltaPercentage = 100;
+          trendDirection = 'up';
+        }
+
+        return {
+          ruleSetId,
+          name,
+          count,
+          percentage,
+          previousCount,
+          deltaPercentage,
+          trendDirection
+        };
+      })
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 

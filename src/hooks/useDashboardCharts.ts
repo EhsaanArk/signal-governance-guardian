@@ -1,8 +1,12 @@
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchHeatmapData, fetchTopBreachedRules } from '@/lib/api/dashboard';
+import { Market } from '@/types/database';
 
 export const useDashboardCharts = () => {
+  const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
+
   const { data: heatmapData, isLoading: heatmapLoading } = useQuery({
     queryKey: ['dashboard-heatmap'],
     queryFn: fetchHeatmapData,
@@ -10,8 +14,8 @@ export const useDashboardCharts = () => {
   });
 
   const { data: topRulesData, isLoading: rulesLoading } = useQuery({
-    queryKey: ['dashboard-top-rules'],
-    queryFn: fetchTopBreachedRules,
+    queryKey: ['dashboard-top-rules', selectedMarket],
+    queryFn: () => fetchTopBreachedRules(selectedMarket),
     refetchInterval: 60000,
   });
 
@@ -20,5 +24,7 @@ export const useDashboardCharts = () => {
     heatmapLoading,
     topRulesData,
     rulesLoading,
+    selectedMarket,
+    setSelectedMarket,
   };
 };

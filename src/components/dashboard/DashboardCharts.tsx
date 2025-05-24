@@ -6,7 +6,14 @@ import HeatmapChart from './charts/HeatmapChart';
 import TopRulesChart from './charts/TopRulesChart';
 
 const DashboardCharts = () => {
-  const { heatmapData, heatmapLoading, topRulesData, rulesLoading } = useDashboardCharts();
+  const { 
+    heatmapData, 
+    heatmapLoading, 
+    topRulesData, 
+    rulesLoading,
+    selectedMarket,
+    setSelectedMarket
+  } = useDashboardCharts();
 
   return (
     <div className="w-full max-w-full">
@@ -24,14 +31,15 @@ const DashboardCharts = () => {
           </CardContent>
         </Card>
 
-        {/* Top Breached Rules */}
+        {/* Enhanced Top Breached Rules */}
         <Card className="min-w-0">
-          <CardHeader>
-            <CardTitle className="text-base lg:text-lg">Top 5 Breach Rules</CardTitle>
-            <p className="text-xs lg:text-sm text-muted-foreground">Most triggered in 24h</p>
-          </CardHeader>
-          <CardContent>
-            <TopRulesChart topRulesData={topRulesData} rulesLoading={rulesLoading} />
+          <CardContent className="p-6">
+            <TopRulesChart 
+              topRulesData={topRulesData} 
+              rulesLoading={rulesLoading}
+              selectedMarket={selectedMarket}
+              onMarketChange={setSelectedMarket}
+            />
           </CardContent>
         </Card>
       </div>
