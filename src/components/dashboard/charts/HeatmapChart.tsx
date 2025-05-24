@@ -14,11 +14,11 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
   const { timeRange } = useDashboardTimeRange();
   
   const getSubtitle = () => {
-    if (timeRange.preset === '24h') return 'Distribution of stop-loss events across markets and time periods (last 24 hours)';
-    if (timeRange.preset === '7d') return 'Distribution of stop-loss events across markets and time periods (last 7 days)';
-    if (timeRange.preset === '30d') return 'Distribution of stop-loss events across markets and time periods (last 30 days)';
-    if (timeRange.preset === '90d') return 'Distribution of stop-loss events across markets and time periods (last 90 days)';
-    return 'Distribution of stop-loss events across markets and time periods (selected period)';
+    if (timeRange.preset === '24h') return 'Distribution of breach events across markets and time periods (last 24 hours)';
+    if (timeRange.preset === '7d') return 'Distribution of breach events across markets and time periods (last 7 days)';
+    if (timeRange.preset === '30d') return 'Distribution of breach events across markets and time periods (last 30 days)';
+    if (timeRange.preset === '90d') return 'Distribution of breach events across markets and time periods (last 90 days)';
+    return 'Distribution of breach events across markets and time periods (selected period)';
   };
 
   if (heatmapLoading) {
@@ -33,22 +33,36 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     );
   }
 
-  // Define trading sessions with their time ranges
-  const tradingSessions = [
-    { name: 'Sydney', time: '21:00-00:00 UTC' },
-    { name: 'Tokyo', time: '00:00-06:00 UTC' },
-    { name: 'London', time: '06:00-12:00 UTC' },
-    { name: 'New York', time: '12:00-17:00 UTC' },
-    { name: 'After-hours', time: '17:00-21:00 UTC' }
-  ];
+  if (!heatmapData) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
+          <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
+        </div>
+        <div className="h-64 flex items-center justify-center text-muted-foreground">
+          No data available for the selected period
+        </div>
+      </div>
+    );
+  }
 
-  const markets = ['Forex', 'Crypto', 'Indices'];
+  const markets = Object.keys(heatmapData.markets);
+  const sessions = heatmapData.sessions;
 
-  // Mock data transformation - you'll need to adjust this based on your actual data structure
   const getEventCount = (market: string, session: string) => {
-    // This is a placeholder - replace with actual data mapping logic
-    if (market === 'Forex' && session === 'After-hours') return 1;
-    return 0;
+    const sessionData = sessions.find(s => s.name === session);
+    if (!sessionData) return 0;
+
+    let count = 0;
+    const marketData = heatmapData.markets[market] || {};
+    
+    // Sum up events within the session's hour range
+    for (let hour = sessionData.startHour; hour <= sessionData.endHour; hour++) {
+      count += marketData[hour] || 0;
+    }
+    
+    return count;
   };
 
   const getIntensityClass = (count: number) => {
@@ -59,21 +73,42 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     return 'bg-red-600'; // Critical (10+)
   };
 
+  const formatSessionTime = (session: { startHour: number; endHour: number }) => {
+    const formatHour = (hour: number) => `${hour.toString().padStart(2, '0')}:00`;
+    return `${formatHour(session.startHour)}-${formatHour(session.endHour)} UTC`;
+  };
+
   const getTotalForMarket = (market: string) => {
-    return tradingSessions.reduce((total, session) => total + getEventCount(market, session.name), 0);
+    return heatmapData.totalsByMarket[market] || 0;
   };
 
-  const getTotalForSession = (session: string) => {
-    return markets.reduce((total, market) => total + getEventCount(market, session), 0);
+  const getTotalForSession = (sessionName: string) => {
+    return heatmapData.totalsBySessions[sessionName] || 0;
   };
 
-  const grandTotal = markets.reduce((total, market) => total + getTotalForMarket(market), 0);
-  const mostActiveSession = tradingSessions.reduce((max, session) => 
+  const grandTotal = heatmapData.grandTotal;
+  const mostActiveSession = sessions.reduce((max, session) => 
     getTotalForSession(session.name) > getTotalForSession(max.name) ? session : max
-  );
+  , sessions[0] || { name: 'None', startHour: 0, endHour: 0, count: 0 });
+  
   const mostActiveMarket = markets.reduce((max, market) => 
     getTotalForMarket(market) > getTotalForMarket(max) ? market : max
-  );
+  , markets[0] || 'None');
+
+  // Show message if no sessions detected
+  if (sessions.length === 0 || grandTotal === 0) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
+          <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
+        </div>
+        <div className="h-64 flex items-center justify-center text-muted-foreground">
+          No breach events found for the selected time period
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -84,7 +119,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
 
       {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-        <span className="font-medium">Loss Events Intensity:</span>
+        <span className="font-medium">Event Intensity:</span>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-gray-100 rounded border"></div>
           <span>None (0)</span>
@@ -111,12 +146,12 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
       <div className="overflow-x-auto">
         <div className="min-w-[800px]">
           {/* Header */}
-          <div className="grid grid-cols-7 gap-2 mb-2">
+          <div className={`grid gap-2 mb-2`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${sessions.length}, 1fr) 120px` }}>
             <div className="text-sm font-medium text-muted-foreground">Market</div>
-            {tradingSessions.map((session) => (
+            {sessions.map((session) => (
               <div key={session.name} className="text-center">
                 <div className="text-sm font-medium">{session.name}</div>
-                <div className="text-xs text-muted-foreground">{session.time}</div>
+                <div className="text-xs text-muted-foreground">{formatSessionTime(session)}</div>
               </div>
             ))}
             <div className="text-center">
@@ -127,9 +162,9 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
 
           {/* Market Rows */}
           {markets.map((market) => (
-            <div key={market} className="grid grid-cols-7 gap-2 mb-2">
+            <div key={market} className={`grid gap-2 mb-2`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${sessions.length}, 1fr) 120px` }}>
               <div className="flex items-center text-sm font-medium">{market}</div>
-              {tradingSessions.map((session) => {
+              {sessions.map((session) => {
                 const count = getEventCount(market, session.name);
                 return (
                   <div
@@ -149,9 +184,9 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
           ))}
 
           {/* Total Row */}
-          <div className="grid grid-cols-7 gap-2 mt-4">
+          <div className={`grid gap-2 mt-4`} style={{ gridTemplateColumns: `minmax(120px, 1fr) repeat(${sessions.length}, 1fr) 120px` }}>
             <div className="flex items-center text-sm font-medium">Σ Total</div>
-            {tradingSessions.map((session) => (
+            {sessions.map((session) => (
               <div
                 key={session.name}
                 className="h-16 rounded-lg border border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-center"

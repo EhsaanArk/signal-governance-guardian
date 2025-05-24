@@ -15,10 +15,23 @@ export interface DashboardMetrics {
   winRate24h: number;
 }
 
+export interface TradingSession {
+  name: string;
+  startHour: number;
+  endHour: number;
+  count: number;
+}
+
 export interface HeatmapData {
-  [market: string]: {
-    [hour: number]: number;
+  markets: {
+    [market: string]: {
+      [hour: number]: number;
+    };
   };
+  sessions: TradingSession[];
+  totalsByMarket: { [market: string]: number };
+  totalsBySessions: { [sessionName: string]: number };
+  grandTotal: number;
 }
 
 export interface TopBreachedRule {
@@ -46,6 +59,57 @@ export interface ExpiringCooldown {
   market: Market;
   expires_at: string;
 }
+
+const generateTradingSessions = (hourlyData: { [hour: number]: number }): TradingSession[] => {
+  const sessions: TradingSession[] = [];
+  const activeHours = Object.keys(hourlyData).map(h => parseInt(h)).sort((a, b) => a - b);
+  
+  if (activeHours.length === 0) {
+    // Return default sessions if no data
+    return [
+      { name: 'No Activity', startHour: 0, endHour: 23, count: 0 }
+    ];
+  }
+
+  // Group consecutive hours into sessions
+  let sessionStart = activeHours[0];
+  let sessionEnd = activeHours[0];
+  let sessionCount = hourlyData[activeHours[0]] || 0;
+  
+  for (let i = 1; i < activeHours.length; i++) {
+    const currentHour = activeHours[i];
+    const prevHour = activeHours[i - 1];
+    
+    // If hours are consecutive (within 2 hours), extend the session
+    if (currentHour - prevHour <= 2) {
+      sessionEnd = currentHour;
+      sessionCount += hourlyData[currentHour] || 0;
+    } else {
+      // Create a session for the previous group
+      sessions.push({
+        name: `Session ${sessions.length + 1}`,
+        startHour: sessionStart,
+        endHour: sessionEnd,
+        count: sessionCount
+      });
+      
+      // Start a new session
+      sessionStart = currentHour;
+      sessionEnd = currentHour;
+      sessionCount = hourlyData[currentHour] || 0;
+    }
+  }
+  
+  // Add the final session
+  sessions.push({
+    name: `Session ${sessions.length + 1}`,
+    startHour: sessionStart,
+    endHour: sessionEnd,
+    count: sessionCount
+  });
+
+  return sessions;
+};
 
 export async function fetchDashboardMetrics(startDate?: string, endDate?: string, providerId?: string): Promise<DashboardMetrics> {
   console.log('📊 Fetching dashboard metrics...', { startDate, endDate, providerId });
@@ -166,10 +230,9 @@ export async function fetchHeatmapData(startDate?: string, endDate?: string, pro
   try {
     let query = supabase
       .from('breach_events')
-      .select('occurred_at, market')
+      .select('occurred_at, market, action_taken')
       .gte('occurred_at', defaultStart)
-      .lte('occurred_at', defaultEnd)
-      .eq('action_taken', 'signal_rejected'); // Assuming this represents SL events
+      .lte('occurred_at', defaultEnd);
 
     if (providerId) {
       query = query.eq('provider_id', providerId);
@@ -178,26 +241,65 @@ export async function fetchHeatmapData(startDate?: string, endDate?: string, pro
     const { data: breaches, error } = await query;
     if (error) throw error;
 
-    // Process data into heatmap format
-    const heatmapData: HeatmapData = {
+    // Initialize market data
+    const markets: { [market: string]: { [hour: number]: number } } = {
       Forex: {},
       Crypto: {},
       Indices: {}
     };
 
+    const totalsByMarket: { [market: string]: number } = {
+      Forex: 0,
+      Crypto: 0,
+      Indices: 0
+    };
+
+    let grandTotal = 0;
+
+    // Process breach data
     breaches?.forEach(breach => {
       const hour = new Date(breach.occurred_at).getUTCHours();
       const market = breach.market;
       
-      if (!heatmapData[market]) {
-        heatmapData[market] = {};
+      if (!markets[market]) {
+        markets[market] = {};
       }
       
-      heatmapData[market][hour] = (heatmapData[market][hour] || 0) + 1;
+      markets[market][hour] = (markets[market][hour] || 0) + 1;
+      totalsByMarket[market] = (totalsByMarket[market] || 0) + 1;
+      grandTotal += 1;
     });
 
-    console.log('✅ Heatmap data processed');
-    return heatmapData;
+    // Generate sessions from aggregated hourly data
+    const allHourlyData: { [hour: number]: number } = {};
+    Object.values(markets).forEach(marketData => {
+      Object.entries(marketData).forEach(([hour, count]) => {
+        const h = parseInt(hour);
+        allHourlyData[h] = (allHourlyData[h] || 0) + count;
+      });
+    });
+
+    const sessions = generateTradingSessions(allHourlyData);
+    
+    // Calculate totals by session
+    const totalsBySessions: { [sessionName: string]: number } = {};
+    sessions.forEach(session => {
+      totalsBySessions[session.name] = session.count;
+    });
+
+    console.log('✅ Heatmap data processed with dynamic sessions:', {
+      marketsCount: Object.keys(markets).length,
+      sessionsCount: sessions.length,
+      grandTotal
+    });
+
+    return {
+      markets,
+      sessions,
+      totalsByMarket,
+      totalsBySessions,
+      grandTotal
+    };
   } catch (error) {
     console.error('❌ Error fetching heatmap data:', error);
     throw error;
