@@ -40,6 +40,12 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     return `${session.name} • ${market} • ${count} ${eventText} (last 7 days)`;
   };
 
+  const getSessionTotal = (session: TradingSession) => {
+    return markets.reduce((total, market) => {
+      return total + getSessionEvents(heatmapData, market, session);
+    }, 0);
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-4 overflow-hidden">
@@ -73,7 +79,7 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
           {/* Desktop Layout (md and up) */}
           <div className="hidden md:block overflow-x-auto">
             {/* Session Headers */}
-            <div className="grid grid-cols-6 gap-2 min-w-[600px]">
+            <div className="grid grid-cols-7 gap-2 min-w-[700px]">
               <div className="text-xs lg:text-sm font-medium text-gray-600">Market</div>
               {TRADING_SESSIONS.map(session => (
                 <div key={session.name} className="text-center">
@@ -81,47 +87,133 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
                   <div className="text-xs text-gray-500">{session.utcRange} UTC</div>
                 </div>
               ))}
+              <div className="text-center">
+                <div className="text-xs lg:text-sm font-medium text-gray-700">Σ Total</div>
+                <div className="text-xs text-gray-500">All Sessions</div>
+              </div>
             </div>
 
             {/* Market Rows */}
-            {markets.map(market => (
-              <div key={market} className="grid grid-cols-6 gap-2 items-center min-w-[600px]">
-                <div className="text-xs lg:text-sm font-medium text-gray-700 py-2">
-                  {market}
-                </div>
-                {TRADING_SESSIONS.map(session => {
-                  const totalEvents = getSessionEvents(heatmapData, market, session);
+            {markets.map(market => {
+              const marketTotal = TRADING_SESSIONS.reduce((total, session) => {
+                return total + getSessionEvents(heatmapData, market, session);
+              }, 0);
 
-                  return (
-                    <Tooltip key={`${market}-${session.name}`}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={`
-                            h-12 lg:h-16 rounded-lg flex items-center justify-center 
-                            cursor-pointer transition-all duration-200 
-                            hover:scale-105 hover:shadow-md
-                            ${getIntensityColor(totalEvents)}
-                          `}
-                          onClick={() => navigate(`/admin/breaches?market=${market}&session=${session.name}`)}
-                        >
-                          <div className="text-center">
-                            <div className={`text-sm lg:text-lg font-bold ${getTextColor(totalEvents)}`}>
-                              {totalEvents || '0'}
-                            </div>
-                            <div className={`text-xs ${getTextColor(totalEvents)}`}>
-                              events
+              return (
+                <div key={market} className="grid grid-cols-7 gap-2 items-center min-w-[700px]">
+                  <div className="text-xs lg:text-sm font-medium text-gray-700 py-2">
+                    {market}
+                  </div>
+                  {TRADING_SESSIONS.map(session => {
+                    const totalEvents = getSessionEvents(heatmapData, market, session);
+
+                    return (
+                      <Tooltip key={`${market}-${session.name}`}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={`
+                              h-12 lg:h-16 rounded-lg flex items-center justify-center 
+                              cursor-pointer transition-all duration-200 
+                              hover:scale-105 hover:shadow-md
+                              ${getIntensityColor(totalEvents)}
+                            `}
+                            onClick={() => navigate(`/admin/breaches?market=${market}&session=${session.name}`)}
+                          >
+                            <div className="text-center">
+                              <div className={`text-sm lg:text-lg font-bold ${getTextColor(totalEvents)}`}>
+                                {totalEvents || '0'}
+                              </div>
+                              <div className={`text-xs ${getTextColor(totalEvents)}`}>
+                                events
+                              </div>
                             </div>
                           </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{getTooltipText(session, market, totalEvents)}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  {/* Market Total Column */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={`
+                          h-12 lg:h-16 rounded-lg flex items-center justify-center 
+                          border-2 border-gray-300 bg-gray-50
+                          cursor-pointer transition-all duration-200 
+                          hover:scale-105 hover:shadow-md
+                        `}
+                        onClick={() => navigate(`/admin/breaches?market=${market}`)}
+                      >
+                        <div className="text-center">
+                          <div className="text-sm lg:text-lg font-bold text-gray-700">
+                            {marketTotal || '0'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            total
+                          </div>
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{getTooltipText(session, market, totalEvents)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{market} • {marketTotal} total events (last 7 days)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              );
+            })}
+
+            {/* Session Totals Row */}
+            <div className="grid grid-cols-7 gap-2 items-center min-w-[700px] pt-2 border-t border-gray-200">
+              <div className="text-xs lg:text-sm font-medium text-gray-700 py-2">
+                Σ Total
               </div>
-            ))}
+              {TRADING_SESSIONS.map(session => {
+                const sessionTotal = getSessionTotal(session);
+                return (
+                  <Tooltip key={`total-${session.name}`}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={`
+                          h-12 lg:h-16 rounded-lg flex items-center justify-center 
+                          border-2 border-gray-300 bg-gray-50
+                          cursor-pointer transition-all duration-200 
+                          hover:scale-105 hover:shadow-md
+                        `}
+                        onClick={() => navigate(`/admin/breaches?session=${session.name}`)}
+                      >
+                        <div className="text-center">
+                          <div className="text-sm lg:text-lg font-bold text-gray-700">
+                            {sessionTotal || '0'}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            total
+                          </div>
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{session.name} • {sessionTotal} total events (last 7 days)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
+              {/* Grand Total */}
+              <div className="h-12 lg:h-16 rounded-lg flex items-center justify-center bg-blue-50 border-2 border-blue-200">
+                <div className="text-center">
+                  <div className="text-sm lg:text-lg font-bold text-blue-700">
+                    {Object.values(heatmapData || {}).reduce((total, marketData) => {
+                      return total + Object.values(marketData).reduce((sum, count) => sum + count, 0);
+                    }, 0)}
+                  </div>
+                  <div className="text-xs text-blue-500">
+                    grand
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Mobile Layout (sm and below) - Horizontal Scroll */}
@@ -135,47 +227,68 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
                   <div className="text-xs text-gray-500">{session.utcRange}</div>
                 </div>
               ))}
+              <div className="flex-shrink-0 w-20 text-center snap-start">
+                <div className="text-xs font-medium text-gray-700">Σ Total</div>
+                <div className="text-xs text-gray-500">All</div>
+              </div>
             </div>
 
             {/* Market Rows - Mobile */}
-            {markets.map(market => (
-              <div key={market} className="flex gap-2 items-center overflow-x-auto snap-x snap-mandatory py-1">
-                <div className="flex-shrink-0 w-20 text-xs font-medium text-gray-700 snap-start">
-                  {market}
-                </div>
-                {TRADING_SESSIONS.map(session => {
-                  const totalEvents = getSessionEvents(heatmapData, market, session);
+            {markets.map(market => {
+              const marketTotal = TRADING_SESSIONS.reduce((total, session) => {
+                return total + getSessionEvents(heatmapData, market, session);
+              }, 0);
 
-                  return (
-                    <Tooltip key={`${market}-${session.name}`}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={`
-                            flex-shrink-0 w-20 h-12 rounded-lg flex items-center justify-center 
-                            cursor-pointer transition-all duration-200 
-                            hover:scale-105 hover:shadow-md snap-start
-                            ${getIntensityColor(totalEvents)}
-                          `}
-                          onClick={() => navigate(`/admin/breaches?market=${market}&session=${session.name}`)}
-                        >
-                          <div className="text-center">
-                            <div className={`text-sm font-bold ${getTextColor(totalEvents)}`}>
-                              {totalEvents || '0'}
-                            </div>
-                            <div className={`text-xs ${getTextColor(totalEvents)}`}>
-                              events
+              return (
+                <div key={market} className="flex gap-2 items-center overflow-x-auto snap-x snap-mandatory py-1">
+                  <div className="flex-shrink-0 w-20 text-xs font-medium text-gray-700 snap-start">
+                    {market}
+                  </div>
+                  {TRADING_SESSIONS.map(session => {
+                    const totalEvents = getSessionEvents(heatmapData, market, session);
+
+                    return (
+                      <Tooltip key={`${market}-${session.name}`}>
+                        <TooltipTrigger asChild>
+                          <div
+                            className={`
+                              flex-shrink-0 w-20 h-12 rounded-lg flex items-center justify-center 
+                              cursor-pointer transition-all duration-200 
+                              hover:scale-105 hover:shadow-md snap-start
+                              ${getIntensityColor(totalEvents)}
+                            `}
+                            onClick={() => navigate(`/admin/breaches?market=${market}&session=${session.name}`)}
+                          >
+                            <div className="text-center">
+                              <div className={`text-sm font-bold ${getTextColor(totalEvents)}`}>
+                                {totalEvents || '0'}
+                              </div>
+                              <div className={`text-xs ${getTextColor(totalEvents)}`}>
+                                events
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{getTooltipText(session, market, totalEvents)}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </div>
-            ))}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{getTooltipText(session, market, totalEvents)}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                  {/* Market Total - Mobile */}
+                  <div className="flex-shrink-0 w-20 h-12 rounded-lg flex items-center justify-center border-2 border-gray-300 bg-gray-50 snap-start">
+                    <div className="text-center">
+                      <div className="text-sm font-bold text-gray-700">
+                        {marketTotal || '0'}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        total
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -189,7 +302,23 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
             }
           </div>
           <div className="text-xs lg:text-sm text-gray-600">
-            <span className="font-medium">Most Active:</span> {
+            <span className="font-medium">Most Active Session:</span> {
+              (() => {
+                let maxCount = 0;
+                let maxSession = '';
+                TRADING_SESSIONS.forEach(session => {
+                  const sessionTotal = getSessionTotal(session);
+                  if (sessionTotal > maxCount) {
+                    maxCount = sessionTotal;
+                    maxSession = session.label;
+                  }
+                });
+                return maxSession || 'None';
+              })()
+            }
+          </div>
+          <div className="text-xs lg:text-sm text-gray-600">
+            <span className="font-medium">Most Active Market:</span> {
               (() => {
                 let maxCount = 0;
                 let maxMarket = '';

@@ -5,6 +5,7 @@ import { Cell, PieChart, Pie, ResponsiveContainer } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { TopBreachedRule } from '@/lib/api/dashboard';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface TopRulesChartProps {
   topRulesData: TopBreachedRule[] | undefined;
@@ -18,6 +19,35 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({ topRulesData, rulesLoadin
   if (rulesLoading) {
     return <Skeleton className="h-64 w-full" />;
   }
+
+  // Simulate trend data - in real implementation this would come from API
+  const getTrendDirection = (index: number): 'up' | 'down' | 'flat' => {
+    // Mock trend logic based on index for demo
+    const trends = ['up', 'down', 'up', 'flat', 'down'];
+    return trends[index] as 'up' | 'down' | 'flat';
+  };
+
+  const getTrendIcon = (trend: 'up' | 'down' | 'flat') => {
+    switch (trend) {
+      case 'up':
+        return <ArrowUp className="w-3 h-3 text-red-500" />;
+      case 'down':
+        return <ArrowDown className="w-3 h-3 text-green-500" />;
+      default:
+        return <div className="w-3 h-3 flex items-center justify-center text-gray-400">−</div>;
+    }
+  };
+
+  const getTrendColor = (trend: 'up' | 'down' | 'flat') => {
+    switch (trend) {
+      case 'up':
+        return 'text-red-500';
+      case 'down':
+        return 'text-green-500';
+      default:
+        return 'text-gray-400';
+    }
+  };
 
   return (
     <>
@@ -54,18 +84,24 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({ topRulesData, rulesLoadin
       
       {topRulesData && (
         <div className="mt-4 space-y-2">
-          {topRulesData.slice(0, 5).map((rule, index) => (
-            <div key={rule.ruleSetId} className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2 min-w-0">
-                <div 
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                />
-                <span className="truncate text-xs lg:text-sm">{rule.name}</span>
+          {topRulesData.slice(0, 5).map((rule, index) => {
+            const trend = getTrendDirection(index);
+            return (
+              <div key={rule.ruleSetId} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="truncate text-xs lg:text-sm">{rule.name}</span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {getTrendIcon(trend)}
+                  <span className="font-medium text-xs lg:text-sm">{rule.count}</span>
+                </div>
               </div>
-              <span className="font-medium text-xs lg:text-sm flex-shrink-0">{rule.count}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>
