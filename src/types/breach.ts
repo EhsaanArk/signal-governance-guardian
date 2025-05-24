@@ -1,12 +1,16 @@
 
 import { DateRange } from 'react-day-picker';
 import { Market } from '@/types/database';
+import { TimeRangePreset } from '@/components/breaches/TimeRangeSelector';
 
 export interface BreachEventFilters {
   selectedMarket: Market | 'All';
   providerSearch: string;
   selectedRuleSet: string;
   dateRange: DateRange | undefined;
+  timeRangePreset?: TimeRangePreset;
+  providerId?: string | null;
+  providerName?: string | null;
 }
 
 export interface TransformedBreachEvent {

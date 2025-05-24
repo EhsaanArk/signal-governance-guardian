@@ -1,43 +1,33 @@
 
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { DateRange } from 'react-day-picker';
 import { useQuery } from '@tanstack/react-query';
-import { Market } from '@/types/database';
+import { toast } from 'sonner';
+import { BreachFiltersState } from './useBreachFilters';
 import { BreachEventsService } from '@/lib/api/breach-events-service';
 import { BreachFilters } from '@/utils/breach-filters';
 import { BreachTransformer } from '@/utils/breach-transformer';
 import { endCooldown } from '@/lib/api/breach-events';
 
-export const useBreachEvents = () => {
-  const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
-  const [providerSearch, setProviderSearch] = useState('');
-  const [selectedRuleSet, setSelectedRuleSet] = useState('all');
-  
-  // Create normalized default date range that includes existing breach events (May 2025)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2020, 0, 1, 12, 0, 0, 0), // Jan 1, 2020 at noon
-    to: new Date(2030, 11, 31, 12, 0, 0, 0)  // Dec 31, 2030 at noon
-  });
-
+export const useBreachEventsWithFilters = (filters: BreachFiltersState) => {
   const breachService = new BreachEventsService();
 
   const { data: breaches = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['breachEvents', selectedMarket, providerSearch, selectedRuleSet, dateRange],
+    queryKey: ['breachEvents', filters],
     queryFn: async () => {
       console.log('🎯 ==> BREACH EVENTS QUERY STARTED <==');
       console.log('🔧 Applied filters:', {
-        selectedMarket,
-        providerSearch,
-        selectedRuleSet,
+        timeRangePreset: filters.timeRangePreset,
         dateRange: {
-          from: dateRange?.from?.toISOString(),
-          to: dateRange?.to?.toISOString()
-        }
+          from: filters.dateRange?.from?.toISOString(),
+          to: filters.dateRange?.to?.toISOString()
+        },
+        market: filters.market,
+        providerId: filters.providerId,
+        ruleSetId: filters.ruleSetId,
+        providerSearch: filters.providerSearch
       });
 
       try {
-        // Step 1: Fetch all breach events with connection test
+        // Step 1: Fetch all breach events
         console.log('📡 Step 1: Fetching breach events...');
         const allBreaches = await breachService.fetchAllBreachEvents();
         
@@ -48,16 +38,23 @@ export const useBreachEvents = () => {
 
         console.log(`📊 Found ${allBreaches.length} total breach events in database`);
 
-        // Step 2: Apply filters with enhanced debugging
+        // Step 2: Apply filters
         console.log('🔍 Step 2: Applying filters...');
-        let filteredBreaches = BreachFilters.applyDateRangeFilter(allBreaches, dateRange);
+        let filteredBreaches = BreachFilters.applyDateRangeFilter(allBreaches, filters.dateRange);
         console.log(`📅 After date filtering: ${filteredBreaches.length} breach events`);
         
-        filteredBreaches = BreachFilters.applyMarketFilter(filteredBreaches, selectedMarket);
+        filteredBreaches = BreachFilters.applyMarketFilter(filteredBreaches, filters.market);
         console.log(`🏪 After market filtering: ${filteredBreaches.length} breach events`);
         
-        filteredBreaches = BreachFilters.applyRuleSetFilter(filteredBreaches, selectedRuleSet);
+        filteredBreaches = BreachFilters.applyRuleSetFilter(filteredBreaches, filters.ruleSetId);
         console.log(`📋 After rule set filtering: ${filteredBreaches.length} breach events`);
+
+        // Apply provider ID filter if selected
+        if (filters.providerId) {
+          const beforeProviderFilter = filteredBreaches.length;
+          filteredBreaches = filteredBreaches.filter(breach => breach.provider_id === filters.providerId);
+          console.log(`👤 After provider ID filtering: ${beforeProviderFilter} -> ${filteredBreaches.length} breach events`);
+        }
 
         if (filteredBreaches.length === 0) {
           console.log('❌ No breach events match the current filters');
@@ -82,9 +79,9 @@ export const useBreachEvents = () => {
           subRuleMap
         );
 
-        // Step 5: Apply provider search filter
+        // Step 5: Apply provider search filter (text search)
         console.log('🔍 Step 5: Applying provider search...');
-        transformedData = BreachFilters.applyProviderSearchFilter(transformedData, providerSearch);
+        transformedData = BreachFilters.applyProviderSearchFilter(transformedData, filters.providerSearch);
 
         console.log('✅ Final transformed breach events:', transformedData.length);
         console.log('🎯 ==> BREACH EVENTS QUERY COMPLETED <==');
@@ -98,7 +95,6 @@ export const useBreachEvents = () => {
       }
     },
     retry: (failureCount, error) => {
-      // Only retry once for network errors, not for RLS or permissions errors
       console.log(`🔄 Query retry attempt ${failureCount}`, error);
       return failureCount < 1;
     },
@@ -127,14 +123,6 @@ export const useBreachEvents = () => {
   };
 
   return {
-    selectedMarket,
-    setSelectedMarket,
-    providerSearch,
-    setProviderSearch,
-    selectedRuleSet,
-    setSelectedRuleSet,
-    dateRange,
-    setDateRange,
     breaches,
     isLoading,
     error,
