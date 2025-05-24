@@ -48,7 +48,7 @@ export async function fetchExpiringCooldowns(limit: number = 10) {
     id: cooldown.id,
     rule_name: cooldown.rule_set?.name || 'Unknown Rule',
     market: cooldown.market,
-    symbol: cooldown.signal_data?.symbol || 'Unknown',
+    symbol: 'N/A', // Cooldowns don't have symbol data, use placeholder
     expires_at: cooldown.expires_at
   })) || [];
 }

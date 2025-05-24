@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export async function fetchRecentBreaches(limit: number = 10) {
@@ -22,15 +21,23 @@ export async function fetchRecentBreaches(limit: number = 10) {
 
   console.log('✅ Recent breaches fetched:', data?.length || 0);
 
-  return data?.map(breach => ({
-    id: breach.id,
-    rule_name: breach.rule_set?.name || 'Unknown Rule',
-    rule_type: breach.sub_rule?.rule_type || 'Unknown',
-    market: breach.market,
-    symbol: breach.signal_data?.symbol || 'Unknown',
-    status: breach.action_taken === 'cooldown_applied' ? 'active' : 'resolved',
-    created_at: breach.occurred_at
-  })) || [];
+  return data?.map(breach => {
+    // Safely extract symbol from signal_data Json field
+    const signalData = breach.signal_data as any;
+    const symbol = (signalData && typeof signalData === 'object' && signalData.symbol) 
+      ? String(signalData.symbol) 
+      : 'Unknown';
+
+    return {
+      id: breach.id,
+      rule_name: breach.rule_set?.name || 'Unknown Rule',
+      rule_type: breach.sub_rule?.rule_type || 'Unknown',
+      market: breach.market,
+      symbol: symbol,
+      status: breach.action_taken === 'cooldown_triggered' ? 'active' : 'resolved',
+      created_at: breach.occurred_at
+    };
+  }) || [];
 }
 
 export async function endCooldown(cooldownId: string, reason: string) {
