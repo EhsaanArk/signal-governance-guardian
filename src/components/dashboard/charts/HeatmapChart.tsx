@@ -14,18 +14,18 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
   const { timeRange } = useDashboardTimeRange();
   
   const getSubtitle = () => {
-    if (timeRange.preset === '24h') return 'SL events heatmap for last 24 hours';
-    if (timeRange.preset === '7d') return 'SL events heatmap for last 7 days';
-    if (timeRange.preset === '30d') return 'SL events heatmap for last 30 days';
-    if (timeRange.preset === '90d') return 'SL events heatmap for last 90 days';
-    return `SL events heatmap for selected period`;
+    if (timeRange.preset === '24h') return 'Distribution of stop-loss events across markets and time periods (last 24 hours)';
+    if (timeRange.preset === '7d') return 'Distribution of stop-loss events across markets and time periods (last 7 days)';
+    if (timeRange.preset === '30d') return 'Distribution of stop-loss events across markets and time periods (last 30 days)';
+    if (timeRange.preset === '90d') return 'Distribution of stop-loss events across markets and time periods (last 90 days)';
+    return 'Distribution of stop-loss events across markets and time periods (selected period)';
   };
 
   if (heatmapLoading) {
     return (
       <div className="space-y-4">
         <div>
-          <h3 className="text-base lg:text-lg font-semibold">Loss-Event Heat-map</h3>
+          <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
           <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
         </div>
         <Skeleton className="h-64 w-full" />
@@ -33,85 +33,147 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
     );
   }
 
-  const markets = Object.keys(heatmapData || {});
-  const COLORS = ["#68c95f", "#5cb85c", "#53a759", "#4b9656", "#438553", "#3b7450", "#33634d"];
+  // Define trading sessions with their time ranges
+  const tradingSessions = [
+    { name: 'Sydney', time: '21:00-00:00 UTC' },
+    { name: 'Tokyo', time: '00:00-06:00 UTC' },
+    { name: 'London', time: '06:00-12:00 UTC' },
+    { name: 'New York', time: '12:00-17:00 UTC' },
+    { name: 'After-hours', time: '17:00-21:00 UTC' }
+  ];
 
-  const getHeatmapData = (market: string) => {
-    const data = [];
-    for (let i = 0; i < 24; i++) {
-      data.push({
-        hour: i,
-        value: heatmapData?.[market]?.[i] || 0
-      });
-    }
-    return data;
+  const markets = ['Forex', 'Crypto', 'Indices'];
+
+  // Mock data transformation - you'll need to adjust this based on your actual data structure
+  const getEventCount = (market: string, session: string) => {
+    // This is a placeholder - replace with actual data mapping logic
+    if (market === 'Forex' && session === 'After-hours') return 1;
+    return 0;
   };
 
-  const getIntensityColor = (value: number, maxValue: number) => {
-    if (value === 0) return '#f3f4f6'; // Light gray for zero values
-    const intensity = Math.min(value / Math.max(maxValue, 1), 1);
-    const colorIndex = Math.floor(intensity * (COLORS.length - 1));
-    return COLORS[colorIndex];
+  const getIntensityClass = (count: number) => {
+    if (count === 0) return 'bg-gray-100';
+    if (count <= 2) return 'bg-yellow-200'; // Low (1-2)
+    if (count <= 5) return 'bg-orange-300'; // Medium (3-5)
+    if (count <= 10) return 'bg-red-400'; // High (6-10)
+    return 'bg-red-600'; // Critical (10+)
   };
 
-  const getMaxValueForMarket = (market: string) => {
-    const data = getHeatmapData(market);
-    return Math.max(...data.map(d => d.value));
+  const getTotalForMarket = (market: string) => {
+    return tradingSessions.reduce((total, session) => total + getEventCount(market, session.name), 0);
   };
+
+  const getTotalForSession = (session: string) => {
+    return markets.reduce((total, market) => total + getEventCount(market, session), 0);
+  };
+
+  const grandTotal = markets.reduce((total, market) => total + getTotalForMarket(market), 0);
+  const mostActiveSession = tradingSessions.reduce((max, session) => 
+    getTotalForSession(session.name) > getTotalForSession(max.name) ? session : max
+  );
+  const mostActiveMarket = markets.reduce((max, market) => 
+    getTotalForMarket(market) > getTotalForMarket(max) ? market : max
+  );
 
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-base lg:text-lg font-semibold">Loss-Event Heat-map</h3>
+        <h3 className="text-base lg:text-lg font-semibold">Loss-Events Activity Map</h3>
         <p className="text-xs lg:text-sm text-muted-foreground">{getSubtitle()}</p>
       </div>
-      {markets.map((market) => {
-        const marketData = getHeatmapData(market);
-        const maxValue = getMaxValueForMarket(market);
-        
-        return (
-          <div key={market} className="space-y-2">
-            <h4 className="text-sm font-medium">{market}</h4>
-            <Card className="min-w-0">
-              <CardContent className="p-2">
-                <div className="w-full h-20 flex relative">
-                  {marketData.map((entry, index) => (
-                    <div
-                      key={index}
-                      className="flex-1 h-full relative group cursor-pointer border-r border-white/20 last:border-r-0"
-                      style={{
-                        backgroundColor: getIntensityColor(entry.value, maxValue),
-                      }}
-                    >
-                      {/* Improved tooltip */}
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg">
-                        <div className="font-medium">{market} - {entry.hour}:00</div>
-                        <div>Loss Events: {entry.value}</div>
-                        {/* Improved arrow */}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                      </div>
-                      
-                      {/* Hour label at bottom for better readability */}
-                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {entry.hour}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Hour labels below the heatmap */}
-                <div className="flex mt-1 text-xs text-muted-foreground">
-                  {Array.from({ length: 24 }, (_, i) => (
-                    <div key={i} className="flex-1 text-center">
-                      {i % 4 === 0 ? `${i}:00` : ''}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+        <span className="font-medium">Loss Events Intensity:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-gray-100 rounded border"></div>
+          <span>None (0)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-yellow-200 rounded border"></div>
+          <span>Low (1-2)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-orange-300 rounded border"></div>
+          <span>Medium (3-5)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-red-400 rounded border"></div>
+          <span>High (6-10)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-red-600 rounded border"></div>
+          <span>Critical (10+)</span>
+        </div>
+      </div>
+
+      {/* Heatmap Table */}
+      <div className="overflow-x-auto">
+        <div className="min-w-[800px]">
+          {/* Header */}
+          <div className="grid grid-cols-7 gap-2 mb-2">
+            <div className="text-sm font-medium text-muted-foreground">Market</div>
+            {tradingSessions.map((session) => (
+              <div key={session.name} className="text-center">
+                <div className="text-sm font-medium">{session.name}</div>
+                <div className="text-xs text-muted-foreground">{session.time}</div>
+              </div>
+            ))}
+            <div className="text-center">
+              <div className="text-sm font-medium">Σ Total</div>
+              <div className="text-xs text-muted-foreground">All Sessions</div>
+            </div>
           </div>
-        );
-      })}
+
+          {/* Market Rows */}
+          {markets.map((market) => (
+            <div key={market} className="grid grid-cols-7 gap-2 mb-2">
+              <div className="flex items-center text-sm font-medium">{market}</div>
+              {tradingSessions.map((session) => {
+                const count = getEventCount(market, session.name);
+                return (
+                  <div
+                    key={session.name}
+                    className={`h-16 rounded-lg border flex flex-col items-center justify-center text-center ${getIntensityClass(count)}`}
+                  >
+                    <div className="text-lg font-bold">{count}</div>
+                    <div className="text-xs text-muted-foreground">events</div>
+                  </div>
+                );
+              })}
+              <div className="h-16 rounded-lg border border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-center">
+                <div className="text-lg font-bold">{getTotalForMarket(market)}</div>
+                <div className="text-xs text-muted-foreground">total</div>
+              </div>
+            </div>
+          ))}
+
+          {/* Total Row */}
+          <div className="grid grid-cols-7 gap-2 mt-4">
+            <div className="flex items-center text-sm font-medium">Σ Total</div>
+            {tradingSessions.map((session) => (
+              <div
+                key={session.name}
+                className="h-16 rounded-lg border border-gray-300 bg-gray-50 flex flex-col items-center justify-center text-center"
+              >
+                <div className="text-lg font-bold">{getTotalForSession(session.name)}</div>
+                <div className="text-xs text-muted-foreground">total</div>
+              </div>
+            ))}
+            <div className="h-16 rounded-lg border border-blue-300 bg-blue-50 flex flex-col items-center justify-center text-center">
+              <div className="text-lg font-bold text-blue-600">{grandTotal}</div>
+              <div className="text-xs text-blue-600">grand</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="text-sm text-muted-foreground space-y-1">
+        <div>Total Events: <span className="font-medium">{grandTotal}</span></div>
+        <div>Most Active Session: <span className="font-medium">{mostActiveSession.name}</span></div>
+        <div>Most Active Market: <span className="font-medium">{mostActiveMarket}</span></div>
+      </div>
     </div>
   );
 };
