@@ -1,0 +1,150 @@
+
+import React from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigate } from 'react-router-dom';
+import { HeatmapData } from '@/lib/api/dashboard';
+
+interface HeatmapChartProps {
+  heatmapData: HeatmapData | undefined;
+  heatmapLoading: boolean;
+}
+
+const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading }) => {
+  const navigate = useNavigate();
+
+  if (heatmapLoading) {
+    return <Skeleton className="h-80 w-full" />;
+  }
+
+  const markets = ['Forex', 'Crypto', 'Indices'];
+  const timeSlots = [
+    { range: '00-06', label: 'Night', hours: [0, 1, 2, 3, 4, 5] },
+    { range: '06-12', label: 'Morning', hours: [6, 7, 8, 9, 10, 11] },
+    { range: '12-18', label: 'Afternoon', hours: [12, 13, 14, 15, 16, 17] },
+    { range: '18-24', label: 'Evening', hours: [18, 19, 20, 21, 22, 23] }
+  ];
+
+  const getIntensityColor = (count: number) => {
+    if (count === 0) return 'bg-gray-100 border border-gray-200';
+    if (count <= 2) return 'bg-yellow-200 border border-yellow-300';
+    if (count <= 5) return 'bg-orange-300 border border-orange-400';
+    if (count <= 10) return 'bg-red-400 border border-red-500';
+    return 'bg-red-600 border border-red-700';
+  };
+
+  const getTextColor = (count: number) => {
+    if (count === 0) return 'text-gray-400';
+    if (count <= 2) return 'text-yellow-800';
+    if (count <= 5) return 'text-orange-800';
+    return 'text-white';
+  };
+
+  return (
+    <div className="space-y-4 overflow-hidden">
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-2 lg:gap-4 text-xs lg:text-sm">
+        <span className="font-medium text-gray-700 text-xs lg:text-sm">Loss Events Intensity:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-gray-100 border border-gray-200 rounded"></div>
+          <span className="text-gray-600 text-xs">None (0)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-yellow-200 border border-yellow-300 rounded"></div>
+          <span className="text-gray-600 text-xs">Low (1-2)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-orange-300 border border-orange-400 rounded"></div>
+          <span className="text-gray-600 text-xs">Medium (3-5)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-red-400 border border-red-500 rounded"></div>
+          <span className="text-gray-600 text-xs">High (6-10)</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 bg-red-600 border border-red-700 rounded"></div>
+          <span className="text-gray-600 text-xs">Critical (10+)</span>
+        </div>
+      </div>
+
+      {/* Heatmap Grid */}
+      <div className="space-y-3 overflow-x-auto">
+        {/* Time Headers */}
+        <div className="grid grid-cols-5 gap-2 min-w-[480px]">
+          <div className="text-xs lg:text-sm font-medium text-gray-600">Market</div>
+          {timeSlots.map(slot => (
+            <div key={slot.range} className="text-center">
+              <div className="text-xs lg:text-sm font-medium text-gray-700">{slot.label}</div>
+              <div className="text-xs text-gray-500">{slot.range} UTC</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Market Rows */}
+        {markets.map(market => (
+          <div key={market} className="grid grid-cols-5 gap-2 items-center min-w-[480px]">
+            <div className="text-xs lg:text-sm font-medium text-gray-700 py-2">
+              {market}
+            </div>
+            {timeSlots.map(slot => {
+              const totalEvents = slot.hours.reduce((sum, hour) => {
+                return sum + (heatmapData?.[market]?.[hour] || 0);
+              }, 0);
+
+              return (
+                <div
+                  key={`${market}-${slot.range}`}
+                  className={`
+                    h-12 lg:h-16 rounded-lg flex items-center justify-center 
+                    cursor-pointer transition-all duration-200 
+                    hover:scale-105 hover:shadow-md
+                    ${getIntensityColor(totalEvents)}
+                  `}
+                  onClick={() => navigate(`/admin/breaches?market=${market}&timeSlot=${slot.range}`)}
+                  title={`${market} ${slot.label} (${slot.range} UTC) - ${totalEvents} loss events`}
+                >
+                  <div className="text-center">
+                    <div className={`text-sm lg:text-lg font-bold ${getTextColor(totalEvents)}`}>
+                      {totalEvents || '0'}
+                    </div>
+                    <div className={`text-xs ${getTextColor(totalEvents)}`}>
+                      events
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Summary Stats */}
+      <div className="flex flex-wrap gap-4 pt-4 border-t border-gray-200">
+        <div className="text-xs lg:text-sm text-gray-600">
+          <span className="font-medium">Total Events:</span> {
+            Object.values(heatmapData || {}).reduce((total, marketData) => {
+              return total + Object.values(marketData).reduce((sum, count) => sum + count, 0);
+            }, 0)
+          }
+        </div>
+        <div className="text-xs lg:text-sm text-gray-600">
+          <span className="font-medium">Most Active:</span> {
+            (() => {
+              let maxCount = 0;
+              let maxMarket = '';
+              Object.entries(heatmapData || {}).forEach(([market, hours]) => {
+                const marketTotal = Object.values(hours).reduce((sum, count) => sum + count, 0);
+                if (marketTotal > maxCount) {
+                  maxCount = marketTotal;
+                  maxMarket = market;
+                }
+              });
+              return maxMarket || 'None';
+            })()
+          }
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default HeatmapChart;
