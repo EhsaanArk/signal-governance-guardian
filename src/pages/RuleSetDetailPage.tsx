@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { 
   Edit, 
@@ -18,6 +18,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import Header from '@/components/layout/Header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +33,7 @@ import {
 import StatusToggle from '@/components/common/StatusToggle';
 import MarketChip from '@/components/common/MarketChip';
 import BreachBadge from '@/components/common/BreachBadge';
+import { useBreachCountForRuleSet } from '@/hooks/useBreachCountForRuleSet';
 import { CompleteRuleSet } from '@/types';
 
 // Mock complete rule set data (same as used in EditRuleSetPage)
@@ -88,10 +90,14 @@ const mockCompleteRuleSet: CompleteRuleSet = {
 
 const RuleSetDetailPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams<{ id: string }>();
   const [ruleSet, setRuleSet] = useState<CompleteRuleSet | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  // Get breach count for current rule set with applied filters
+  const { breachCount, isLoading: breachCountLoading } = useBreachCountForRuleSet(id || '');
 
   useEffect(() => {
     // In a real app, this would be an API call to fetch the rule set by ID
@@ -116,6 +122,11 @@ const RuleSetDetailPage: React.FC = () => {
     // In a real app, this would delete the rule set
     toast.success(`Rule Set "${ruleSet?.name}" deleted successfully`);
     navigate('/admin/rulesets');
+  };
+
+  const handleBackToBreaches = () => {
+    // Navigate back to breach log with preserved search parameters
+    navigate(`/admin/breaches${location.search}`);
   };
 
   const handleStatusChange = (id: string, enabled: boolean) => {
@@ -186,7 +197,27 @@ const RuleSetDetailPage: React.FC = () => {
   return (
     <MainLayout>
       <Header 
-        title={ruleSet.name}
+        title={
+          <div className="flex items-center gap-4">
+            <span>{ruleSet.name}</span>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                {breachCountLoading ? 'Loading...' : `Breaches (selected period): ${breachCount}`}
+              </Badge>
+              {location.search && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={handleBackToBreaches}
+                  className="text-primary hover:text-primary/80"
+                >
+                  <ArrowLeft className="mr-1 h-3 w-3" />
+                  Back to breaches
+                </Button>
+              )}
+            </div>
+          </div>
+        }
         subtitle={ruleSet.description}
         action={{
           label: 'Edit Rule Set',

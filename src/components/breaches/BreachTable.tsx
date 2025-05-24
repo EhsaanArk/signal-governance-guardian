@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Sheet,
   SheetContent,
@@ -11,6 +12,11 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import MarketChip from '../common/MarketChip';
 import { BreachLog } from '@/types';
 
@@ -21,6 +27,8 @@ interface BreachTableProps {
 
 const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) => {
   const [selectedBreachId, setSelectedBreachId] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
   
   console.log('BreachTable received breaches:', breaches);
   console.log('BreachTable breaches count:', breaches.length);
@@ -49,6 +57,13 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
   const handleViewDetails = (e: React.MouseEvent, breachId: string) => {
     e.stopPropagation();
     setSelectedBreachId(breachId);
+  };
+
+  const handleViewRuleSet = (e: React.MouseEvent, ruleSetId: string) => {
+    e.stopPropagation();
+    // Preserve current search parameters when navigating to rule set detail
+    const targetUrl = `/admin/rulesets/${ruleSetId}${location.search}`;
+    navigate(targetUrl);
   };
 
   const handleCloseSheet = () => {
@@ -102,13 +117,31 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
                     </Badge>
                   </td>
                   <td>
-                    <Button 
-                      variant="link" 
-                      size="sm"
-                      onClick={(e) => handleViewDetails(e, breach.id)}
-                    >
-                      View
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="link" 
+                        size="sm"
+                        onClick={(e) => handleViewDetails(e, breach.id)}
+                      >
+                        View
+                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            variant="link" 
+                            size="sm"
+                            className="text-primary hover:text-primary/80 hover:underline"
+                            onClick={(e) => handleViewRuleSet(e, breach.ruleSetId)}
+                            aria-label="View rule-set configuration"
+                          >
+                            View rule-set
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Open rule-set configuration</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
                   </td>
                 </tr>
               ))

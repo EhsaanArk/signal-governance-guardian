@@ -26,3 +26,44 @@ export async function fetchBreachCounts24h() {
 
   return { data: breachCounts, error: null };
 }
+
+export async function fetchBreachCountForRuleSet(params: {
+  ruleSetId: string;
+  startDate?: Date;
+  endDate?: Date;
+  providerId?: string;
+  market?: string;
+}) {
+  console.log('Fetching breach count for rule set:', params);
+  
+  let query = supabase
+    .from('breach_events')
+    .select('id', { count: 'exact' })
+    .eq('rule_set_id', params.ruleSetId);
+
+  if (params.startDate) {
+    query = query.gte('occurred_at', params.startDate.toISOString());
+  }
+
+  if (params.endDate) {
+    query = query.lte('occurred_at', params.endDate.toISOString());
+  }
+
+  if (params.providerId) {
+    query = query.eq('provider_id', params.providerId);
+  }
+
+  if (params.market && params.market !== 'All') {
+    query = query.eq('market', params.market);
+  }
+
+  const { count, error } = await query;
+
+  if (error) {
+    console.error('Error fetching breach count for rule set:', error);
+    return { count: 0, error };
+  }
+
+  console.log(`Breach count for rule set ${params.ruleSetId}:`, count);
+  return { count: count || 0, error: null };
+}
