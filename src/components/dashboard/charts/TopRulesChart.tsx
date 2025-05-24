@@ -29,6 +29,15 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
   // Consistent color scheme matching rule-set icons
   const COLORS = ['#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4'];
 
+  // Debug logging for troubleshooting
+  console.log('📊 TopRulesChart debug:', {
+    topRulesData,
+    rulesLoading,
+    selectedMarket,
+    dataLength: topRulesData?.length,
+    timeRange: timeRange.preset
+  });
+
   const handleRuleClick = (ruleSetId: string) => {
     const { startDate, endDate } = {
       startDate: timeRange.from.toISOString().split('T')[0],
@@ -73,8 +82,8 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
     return <Skeleton className="h-64 w-full" />;
   }
 
-  // Check if we have sufficient data
-  const hasInsufficientData = !topRulesData || topRulesData.length < 3;
+  // Updated logic: show chart if we have any data, show empty state only if no data at all
+  const hasNoData = !topRulesData || topRulesData.length === 0;
   const totalBreaches = topRulesData ? topRulesData.reduce((sum, rule) => sum + rule.count, 0) : 0;
 
   return (
@@ -87,21 +96,21 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
       <p className="text-xs lg:text-sm text-muted-foreground">{getTimeLabel()}</p>
 
       {/* Conditional content based on data availability */}
-      {hasInsufficientData ? (
-        // Insufficient data state with same height as chart
+      {hasNoData ? (
+        // No data state with same height as chart
         <div className="h-64 flex items-center justify-center">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Not enough variety in breaches for selected period
+              No breach data found for selected period
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              At least 3 distinct rules needed for chart
+              Try adjusting the time range or market filter
             </p>
           </div>
         </div>
       ) : (
         <>
-          {/* Donut Chart */}
+          {/* Donut Chart - now displays with any amount of data */}
           <ChartContainer
             config={{
               count: { label: "Breaches" }
@@ -116,7 +125,7 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
                   cy="50%"
                   innerRadius={60}
                   outerRadius={100}
-                  paddingAngle={5}
+                  paddingAngle={topRulesData.length > 1 ? 5 : 0}
                   dataKey="count"
                   className="cursor-pointer"
                 >
@@ -160,7 +169,8 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-xs lg:text-sm">
                     {rule.count}
-                    {totalBreaches >= 5 && (
+                    {/* Only show percentages if we have more than one rule or significant breach count */}
+                    {(topRulesData.length > 1 || totalBreaches >= 5) && (
                       <span className="text-muted-foreground ml-1">
                         ({rule.percentage}%)
                       </span>
