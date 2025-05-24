@@ -167,6 +167,34 @@ const RuleSetDetailPage: React.FC = () => {
     </Card>
   );
 
+  // Create the header title as a string, then add the extra elements in the action
+  const createHeaderAction = () => {
+    return (
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="bg-muted text-muted-foreground">
+            {breachCountLoading ? 'Loading...' : `Breaches (selected period): ${breachCount}`}
+          </Badge>
+          {location.search && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={handleBackToBreaches}
+              className="text-primary hover:text-primary/80"
+            >
+              <ArrowLeft className="mr-1 h-3 w-3" />
+              Back to breaches
+            </Button>
+          )}
+        </div>
+        <Button onClick={handleEdit}>
+          <Edit className="mr-2 h-4 w-4" />
+          Edit Rule Set
+        </Button>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <MainLayout>
@@ -197,32 +225,9 @@ const RuleSetDetailPage: React.FC = () => {
   return (
     <MainLayout>
       <Header 
-        title={
-          <div className="flex items-center gap-4">
-            <span>{ruleSet.name}</span>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-muted text-muted-foreground">
-                {breachCountLoading ? 'Loading...' : `Breaches (selected period): ${breachCount}`}
-              </Badge>
-              {location.search && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleBackToBreaches}
-                  className="text-primary hover:text-primary/80"
-                >
-                  <ArrowLeft className="mr-1 h-3 w-3" />
-                  Back to breaches
-                </Button>
-              )}
-            </div>
-          </div>
-        }
+        title={ruleSet.name}
         subtitle={ruleSet.description}
-        action={{
-          label: 'Edit Rule Set',
-          onClick: handleEdit
-        }}
+        action={createHeaderAction()}
       />
       
       <div className="p-6">

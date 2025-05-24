@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Market } from '@/types/database';
 
 export async function fetchBreachCounts24h() {
   console.log('Fetching breach counts for last 24 hours...');
@@ -53,7 +54,8 @@ export async function fetchBreachCountForRuleSet(params: {
     query = query.eq('provider_id', params.providerId);
   }
 
-  if (params.market && params.market !== 'All') {
+  // Type guard to ensure market is a valid Market type
+  if (params.market && params.market !== 'All' && isValidMarket(params.market)) {
     query = query.eq('market', params.market);
   }
 
@@ -66,4 +68,9 @@ export async function fetchBreachCountForRuleSet(params: {
 
   console.log(`Breach count for rule set ${params.ruleSetId}:`, count);
   return { count: count || 0, error: null };
+}
+
+// Type guard function to check if a string is a valid Market type
+function isValidMarket(market: string): market is Market {
+  return ['Forex', 'Crypto', 'Indices'].includes(market);
 }
