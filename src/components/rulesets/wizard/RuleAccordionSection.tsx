@@ -53,7 +53,7 @@ const RuleAccordionSection: React.FC<RuleAccordionSectionProps> = ({
             <Switch
               checked={coolingOff.enabled}
               onCheckedChange={(checked) => {
-                setCoolingOff(prev => ({ ...prev, enabled: checked }));
+                setCoolingOff({ ...coolingOff, enabled: checked });
               }}
               onClick={(e) => e.stopPropagation()}
             />
@@ -75,7 +75,7 @@ const RuleAccordionSection: React.FC<RuleAccordionSectionProps> = ({
             <Switch
               checked={sameDirectionGuard.enabled}
               onCheckedChange={(checked) => {
-                setSameDirectionGuard(prev => ({ ...prev, enabled: checked }));
+                setSameDirectionGuard({ ...sameDirectionGuard, enabled: checked });
               }}
               onClick={(e) => e.stopPropagation()}
             />
@@ -98,7 +98,7 @@ const RuleAccordionSection: React.FC<RuleAccordionSectionProps> = ({
             <Switch
               checked={maxActiveTrades.enabled}
               onCheckedChange={(checked) => {
-                setMaxActiveTrades(prev => ({ ...prev, enabled: checked }));
+                setMaxActiveTrades({ ...maxActiveTrades, enabled: checked });
               }}
               onClick={(e) => e.stopPropagation()}
             />
@@ -120,7 +120,7 @@ const RuleAccordionSection: React.FC<RuleAccordionSectionProps> = ({
             <Switch
               checked={positivePipCancelLimit.enabled}
               onCheckedChange={(checked) => {
-                setPositivePipCancelLimit(prev => ({ ...prev, enabled: checked }));
+                setPositivePipCancelLimit({ ...positivePipCancelLimit, enabled: checked });
               }}
               onClick={(e) => e.stopPropagation()}
             />
