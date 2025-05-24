@@ -42,7 +42,7 @@ const DashboardTables = () => {
     queryKey: ['recent-breaches', startDate, endDate, providerId, filters.timeRange.preset],
     queryFn: () => {
       console.log('📋 Fetching recent breaches with params:', { startDate, endDate, providerId });
-      return fetchRecentBreaches(10, startDate, endDate, providerId);
+      return fetchRecentBreaches(10);
     },
     refetchInterval: 60000,
     staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
@@ -52,7 +52,7 @@ const DashboardTables = () => {
     queryKey: ['expiring-cooldowns', providerId, filters.provider.providerId],
     queryFn: () => {
       console.log('⏰ Fetching expiring cooldowns with provider:', providerId);
-      return fetchExpiringCooldowns(10, providerId);
+      return fetchExpiringCooldowns(10);
     },
     refetchInterval: 60000,
     staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
