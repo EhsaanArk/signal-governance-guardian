@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+import DashboardPage from "./pages/DashboardPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import RuleSetsPage from "./pages/RuleSetsPage";
@@ -23,7 +24,9 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/admin/dashboard" element={<DashboardPage />} />
+          <Route path="/old-index" element={<Index />} />
           
           <Route path="/admin/rulesets" element={<RuleSetsPage />} />
           <Route path="/admin/rulesets/:id" element={<RuleSetDetailPage />} />

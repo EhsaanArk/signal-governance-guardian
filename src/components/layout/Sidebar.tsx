@@ -60,6 +60,9 @@ const Sidebar = () => {
   const location = useLocation();
   
   const isActive = (path: string) => {
+    if (path === '/' || path === '/admin/dashboard') {
+      return location.pathname === '/' || location.pathname === '/admin/dashboard';
+    }
     return location.pathname.startsWith(path);
   };
 
@@ -71,10 +74,10 @@ const Sidebar = () => {
       <div className="flex-1 overflow-auto py-4">
         <nav className="grid gap-1 px-2">
           <SidebarItem 
-            to="/admin/dashboard" 
+            to="/" 
             icon={BarChart2} 
             label="Dashboard" 
-            active={isActive('/admin/dashboard')} 
+            active={isActive('/')} 
           />
           <DisabledSidebarItem 
             icon={FileText} 
