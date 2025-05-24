@@ -30,6 +30,7 @@ export interface RecentBreach {
   symbol: string;
   status: string;
   created_at: string;
+  provider_name?: string; // Added optional provider_name field
 }
 
 export interface ExpiringCooldown {
@@ -38,6 +39,7 @@ export interface ExpiringCooldown {
   market: string;
   symbol: string;
   expires_at: string;
+  provider_name?: string; // Added optional provider_name field
 }
 
 export interface HeatmapData {

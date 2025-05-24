@@ -7,8 +7,6 @@ import TopRulesChart from './charts/TopRulesChart';
 
 const DashboardCharts = () => {
   const { 
-    heatmapData, 
-    heatmapLoading, 
     topRulesData, 
     rulesLoading,
     selectedMarket,
@@ -21,7 +19,7 @@ const DashboardCharts = () => {
         {/* Loss-Event Heat-map */}
         <Card className="xl:col-span-2 min-w-0">
           <CardContent className="p-6 overflow-hidden">
-            <HeatmapChart heatmapData={heatmapData} heatmapLoading={heatmapLoading} />
+            <HeatmapChart />
           </CardContent>
         </Card>
 
