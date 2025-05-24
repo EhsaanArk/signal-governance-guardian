@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { ResponsiveContainer } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { HeatmapData } from '@/lib/api/dashboard';
@@ -75,29 +74,39 @@ const HeatmapChart: React.FC<HeatmapChartProps> = ({ heatmapData, heatmapLoading
             <h4 className="text-sm font-medium">{market}</h4>
             <Card className="min-w-0">
               <CardContent className="p-2">
-                <ResponsiveContainer width="100%" height={80}>
-                  <div className="w-full h-full flex">
-                    {marketData.map((entry, index) => (
-                      <div
-                        key={index}
-                        className="flex-1 h-full relative group cursor-pointer"
-                        style={{
-                          backgroundColor: getIntensityColor(entry.value, maxValue),
-                          border: '1px solid rgba(255,255,255,0.2)'
-                        }}
-                        title={`${market} - ${entry.hour}:00 - ${entry.value} Loss Events`}
-                      >
-                        {/* Tooltip on hover */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap">
-                          <div className="font-medium">{market} - {entry.hour}:00</div>
-                          <div>Loss Events: {entry.value}</div>
-                          {/* Arrow */}
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                        </div>
+                <div className="w-full h-20 flex relative">
+                  {marketData.map((entry, index) => (
+                    <div
+                      key={index}
+                      className="flex-1 h-full relative group cursor-pointer border-r border-white/20 last:border-r-0"
+                      style={{
+                        backgroundColor: getIntensityColor(entry.value, maxValue),
+                      }}
+                    >
+                      {/* Improved tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg">
+                        <div className="font-medium">{market} - {entry.hour}:00</div>
+                        <div>Loss Events: {entry.value}</div>
+                        {/* Improved arrow */}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                       </div>
-                    ))}
-                  </div>
-                </ResponsiveContainer>
+                      
+                      {/* Hour label at bottom for better readability */}
+                      <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {entry.hour}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Hour labels below the heatmap */}
+                <div className="flex mt-1 text-xs text-muted-foreground">
+                  {Array.from({ length: 24 }, (_, i) => (
+                    <div key={i} className="flex-1 text-center">
+                      {i % 4 === 0 ? `${i}:00` : ''}
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>
