@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { CoolDown, CoolDownStats } from '@/types';
 
@@ -23,10 +22,10 @@ export async function testCooldownsConnection(): Promise<boolean> {
   }
 }
 
-export async function fetchExpiringCooldowns(limit: number = 10) {
-  console.log('⏰ Fetching expiring cooldowns...');
+export async function fetchExpiringCooldowns(limit: number = 10, providerId?: string) {
+  console.log('⏰ Fetching expiring cooldowns with filters:', { limit, providerId });
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('active_cooldowns')
     .select(`
       *,
@@ -36,6 +35,13 @@ export async function fetchExpiringCooldowns(limit: number = 10) {
     .eq('status', 'active')
     .order('expires_at', { ascending: true })
     .limit(limit);
+
+  // Apply provider filter if provided
+  if (providerId) {
+    query = query.eq('provider_id', providerId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('❌ Error fetching expiring cooldowns:', error);

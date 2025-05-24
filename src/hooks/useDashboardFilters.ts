@@ -1,8 +1,6 @@
 
 import { useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/utils/queryKeys';
 import { 
   DashboardFiltersState, 
   TimeRangeState, 
@@ -16,7 +14,6 @@ import { useProviderFilters } from './useProviderFilters';
 
 export const useDashboardFilters = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryClient = useQueryClient();
   
   const [filters, setFilters] = useState<DashboardFiltersState>(() => {
     const rangeParam = searchParams.get('range');
@@ -59,32 +56,6 @@ export const useDashboardFilters = () => {
     return { timeRange, provider };
   });
 
-  // Immediate and thorough query refresh function
-  const forceRefreshQueries = useCallback(async () => {
-    console.log('🔄 Starting comprehensive query refresh');
-    
-    try {
-      // Step 1: Cancel all in-flight queries
-      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
-      
-      // Step 2: Remove all cached data completely
-      queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
-      
-      // Step 3: Force immediate refetch of all active queries
-      await queryClient.invalidateQueries({ 
-        queryKey: queryKeys.dashboard.all,
-        refetchType: 'active'
-      });
-      
-      // Step 4: Reset query state to ensure fresh data
-      queryClient.resetQueries({ queryKey: queryKeys.dashboard.all });
-      
-      console.log('✅ Comprehensive query refresh completed');
-    } catch (error) {
-      console.error('❌ Query refresh failed:', error);
-    }
-  }, [queryClient]);
-
   const updateFilters = useCallback(async (newFilters: Partial<DashboardFiltersState>) => {
     console.log('🔄 Starting filter update with:', newFilters);
     const updatedFilters = { ...filters, ...newFilters };
@@ -113,10 +84,7 @@ export const useDashboardFilters = () => {
     // Update URL
     setSearchParams(newSearchParams);
     console.log('🌐 Updated URL params:', newSearchParams.toString());
-    
-    // Force immediate data refresh
-    await forceRefreshQueries();
-  }, [filters, setSearchParams, forceRefreshQueries]);
+  }, [filters, setSearchParams]);
 
   // Initialize time range and provider filter hooks
   const timeRangeFilters = useTimeRangeFilters(filters.timeRange, updateFilters);
@@ -157,8 +125,7 @@ export const useDashboardFilters = () => {
     ...timeRangeFilters,
     ...providerFilters,
     getApiDateParams,
-    getDisplayContext,
-    invalidateDashboardQueries: forceRefreshQueries
+    getDisplayContext
   };
 };
 

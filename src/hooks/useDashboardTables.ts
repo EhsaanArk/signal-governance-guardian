@@ -14,22 +14,22 @@ export const useDashboardTables = () => {
   console.log('📋 Dashboard Tables - Filter state:', filters);
   console.log('📋 Dashboard Tables - API params:', { startDate, endDate, providerId });
 
-  // Fetch raw recent breaches data
+  // Fetch raw recent breaches data with filter parameters
   const { data: rawBreaches, isLoading: breachesLoading, error: breachesError } = useQuery<RecentBreach[]>({
     queryKey: queryKeys.dashboard.recentBreaches(startDate, endDate, providerId, filters.timeRange.preset),
     queryFn: () => {
-      console.log('📋 Fetching recent breaches with params:', { startDate, endDate, providerId });
-      return fetchRecentBreaches(10);
+      console.log('📋 Fetching recent breaches with filter params:', { startDate, endDate, providerId });
+      return fetchRecentBreaches(10, startDate, endDate, providerId);
     },
     ...defaultQueryOptions,
   });
 
-  // Fetch raw expiring cooldowns data
+  // Fetch raw expiring cooldowns data with provider filter
   const { data: rawCooldowns, isLoading: cooldownsLoading, error: cooldownsError } = useQuery<ExpiringCooldown[]>({
     queryKey: queryKeys.dashboard.expiringCooldowns(providerId),
     queryFn: () => {
-      console.log('⏰ Fetching expiring cooldowns with provider:', providerId);
-      return fetchExpiringCooldowns(10);
+      console.log('⏰ Fetching expiring cooldowns with provider filter:', providerId);
+      return fetchExpiringCooldowns(10, providerId);
     },
     ...defaultQueryOptions,
   });

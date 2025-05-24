@@ -10,6 +10,7 @@ export const useDashboardData = () => {
   const { startDate, endDate, providerId } = getApiDateParams();
 
   console.log('📊 Dashboard data hook - current filters:', filters);
+  console.log('📊 Dashboard data hook - API params:', { startDate, endDate, providerId });
 
   // Fetch raw metrics data
   const { data: rawMetrics, isLoading: metricsLoading, error: metricsError } = useQuery({

@@ -1,9 +1,14 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export async function fetchRecentBreaches(limit: number = 10) {
-  console.log('📋 Fetching recent breaches...');
+export async function fetchRecentBreaches(
+  limit: number = 10,
+  startDate?: string,
+  endDate?: string,
+  providerId?: string
+) {
+  console.log('📋 Fetching recent breaches with filters:', { limit, startDate, endDate, providerId });
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('breach_events')
     .select(`
       *,
@@ -13,6 +18,21 @@ export async function fetchRecentBreaches(limit: number = 10) {
     `)
     .order('occurred_at', { ascending: false })
     .limit(limit);
+
+  // Apply date filters if provided
+  if (startDate) {
+    query = query.gte('occurred_at', startDate);
+  }
+  if (endDate) {
+    query = query.lte('occurred_at', endDate);
+  }
+  
+  // Apply provider filter if provided
+  if (providerId) {
+    query = query.eq('provider_id', providerId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error('❌ Error fetching recent breaches:', error);

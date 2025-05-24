@@ -15,44 +15,40 @@ export const useFilterTransitions = () => {
       // Execute the filter change
       await callback();
       
-      // Additional forced refresh to ensure data loads
-      console.log('🔄 Performing additional data refresh');
-      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
-      queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
+      // Intelligent query invalidation - only invalidate dashboard queries
+      console.log('🔄 Invalidating dashboard queries');
       await queryClient.invalidateQueries({ 
         queryKey: queryKeys.dashboard.all,
         refetchType: 'active'
       });
       
-      console.log('✅ Filter transition complete with data refresh');
+      console.log('✅ Filter transition complete');
     } catch (error) {
       console.error('❌ Filter transition failed:', error);
     } finally {
-      // Small delay to ensure UI updates properly
+      // Minimal delay for smooth UI transition
       setTimeout(() => {
         setIsTransitioning(false);
-      }, 100);
+      }, 50);
     }
   }, [queryClient]);
 
   const invalidateAllDashboardData = useCallback(async () => {
-    console.log('🔄 Manual invalidation of all dashboard data');
+    console.log('🔄 Manual invalidation of dashboard data');
     setIsTransitioning(true);
     
     try {
-      await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
-      queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
       await queryClient.invalidateQueries({ 
         queryKey: queryKeys.dashboard.all,
         refetchType: 'active'
       });
-      queryClient.resetQueries({ queryKey: queryKeys.dashboard.all });
+      console.log('✅ Manual invalidation complete');
     } catch (error) {
       console.error('❌ Manual invalidation failed:', error);
     } finally {
       setTimeout(() => {
         setIsTransitioning(false);
-      }, 100);
+      }, 50);
     }
   }, [queryClient]);
 

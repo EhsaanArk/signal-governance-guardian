@@ -21,8 +21,8 @@ export const queryKeys = {
 } as const;
 
 export const defaultQueryOptions = {
-  staleTime: 0, // Always consider data stale
-  gcTime: 10 * 1000, // Very short cache time for immediate updates
+  staleTime: 5 * 1000, // Consider data stale after 5 seconds
+  gcTime: 30 * 1000, // Keep in cache for 30 seconds
   refetchInterval: false, // Disable background refetch
   refetchOnWindowFocus: false, // Disable to avoid conflicts
   refetchOnMount: true, // Always refetch on mount
