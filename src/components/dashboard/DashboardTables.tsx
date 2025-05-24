@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,24 +31,31 @@ interface ExpiringCooldown {
 
 const DashboardTables = () => {
   const navigate = useNavigate();
-  const { getApiDateParams, getDisplayContext } = useDashboardFilters();
+  const { getApiDateParams, getDisplayContext, filters } = useDashboardFilters();
 
   const { startDate, endDate, providerId } = getApiDateParams();
 
+  console.log('📋 Dashboard Tables - Filter state:', filters);
+  console.log('📋 Dashboard Tables - API params:', { startDate, endDate, providerId });
+
   const { data: recentBreaches, isLoading: breachesLoading } = useQuery<RecentBreach[]>({
-    queryKey: ['recent-breaches', startDate, endDate, providerId],
+    queryKey: ['recent-breaches', startDate, endDate, providerId, filters.timeRange.preset],
     queryFn: () => {
-      return fetchRecentBreaches(10);
+      console.log('📋 Fetching recent breaches with params:', { startDate, endDate, providerId });
+      return fetchRecentBreaches(10, startDate, endDate, providerId);
     },
     refetchInterval: 60000,
+    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
   });
 
   const { data: expiringCooldowns, isLoading: cooldownsLoading } = useQuery<ExpiringCooldown[]>({
-    queryKey: ['expiring-cooldowns', providerId],
+    queryKey: ['expiring-cooldowns', providerId, filters.provider.providerId],
     queryFn: () => {
-      return fetchExpiringCooldowns(10);
+      console.log('⏰ Fetching expiring cooldowns with provider:', providerId);
+      return fetchExpiringCooldowns(10, providerId);
     },
     refetchInterval: 60000,
+    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
   });
 
   const formatTimeAgo = (date: string) => {

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,12 +26,17 @@ const DashboardKPICards = () => {
   
   const { startDate, endDate, providerId } = getApiDateParams();
   
+  console.log('📊 KPI Cards - Filter state:', filters);
+  console.log('📊 KPI Cards - API params:', { startDate, endDate, providerId });
+  
   const { data: metrics, isLoading, error } = useQuery({
-    queryKey: ['dashboard-metrics', startDate, endDate, providerId],
+    queryKey: ['dashboard-metrics', startDate, endDate, providerId, filters.timeRange.preset, filters.provider.providerId],
     queryFn: () => {
+      console.log('📊 Fetching KPI metrics with params:', { startDate, endDate, providerId });
       return fetchDashboardMetrics(startDate, endDate, providerId);
     },
     refetchInterval: 30000,
+    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
   });
 
   const getTimeLabel = () => {

@@ -13,13 +13,16 @@ export const useDashboardCharts = () => {
 
   const { startDate, endDate, providerId } = getApiDateParams();
 
+  console.log('🔄 Dashboard charts - API params:', { startDate, endDate, providerId });
+
   const { data: heatmapData, isLoading: heatmapLoading } = useQuery({
-    queryKey: ['dashboard-heatmap', startDate, endDate, providerId],
+    queryKey: ['dashboard-heatmap', startDate, endDate, providerId, filters.timeRange.preset],
     queryFn: () => {
       console.log('🔥 Fetching heatmap with params:', { startDate, endDate, providerId });
       return fetchHeatmapData(startDate, endDate, providerId);
     },
     refetchInterval: 60000,
+    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
   });
 
   const { data: topRulesData, isLoading: rulesLoading } = useQuery({
@@ -35,6 +38,7 @@ export const useDashboardCharts = () => {
       return fetchTopBreachedRules(selectedMarket, startDate, endDate, providerId);
     },
     refetchInterval: 60000,
+    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
   });
 
   return {
