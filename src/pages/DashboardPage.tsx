@@ -5,7 +5,6 @@ import Header from '@/components/layout/Header';
 import DashboardKPICards from '@/components/dashboard/DashboardKPICards';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import DashboardTables from '@/components/dashboard/DashboardTables';
-import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
 import LiveTicker from '@/components/dashboard/LiveTicker';
 
 const DashboardPage = () => {
@@ -23,11 +22,6 @@ const DashboardPage = () => {
             {/* KPI Cards Row */}
             <div className="w-full">
               <DashboardKPICards />
-            </div>
-            
-            {/* Quick Actions Row */}
-            <div className="w-full">
-              <DashboardQuickActions />
             </div>
             
             {/* Charts Row */}
