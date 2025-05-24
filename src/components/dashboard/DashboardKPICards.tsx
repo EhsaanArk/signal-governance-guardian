@@ -3,10 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowUp, ArrowDown, Clock, AlertTriangle, TrendingUp, Users } from 'lucide-react';
-import { fetchDashboardMetrics } from '@/lib/api/dashboard';
+import { DashboardService } from '@/lib/api/dashboardService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardFilters } from '@/hooks/useDashboardFilters';
+import { queryKeys, defaultQueryOptions } from '@/lib/utils/queryKeys';
 
 interface KPICard {
   title: string;
@@ -30,13 +31,13 @@ const DashboardKPICards = () => {
   console.log('📊 KPI Cards - API params:', { startDate, endDate, providerId });
   
   const { data: metrics, isLoading, error } = useQuery({
-    queryKey: ['dashboard-metrics', startDate, endDate, providerId, filters.timeRange.preset, filters.provider.providerId],
+    queryKey: queryKeys.dashboard.metrics(startDate, endDate, providerId, filters.timeRange.preset),
     queryFn: () => {
       console.log('📊 Fetching KPI metrics with params:', { startDate, endDate, providerId });
-      return fetchDashboardMetrics(startDate, endDate, providerId);
+      return DashboardService.fetchMetrics({ startDate, endDate, providerId });
     },
-    refetchInterval: 30000,
-    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
+    ...defaultQueryOptions,
+    refetchInterval: 30000, // More frequent updates for KPIs
   });
 
   const getTimeLabel = () => {

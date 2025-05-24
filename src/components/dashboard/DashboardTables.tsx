@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,24 +11,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import ComplianceTooltip from '@/components/common/ComplianceTooltip';
 import { useDashboardFilters } from '@/hooks/useDashboardFilters';
-
-interface RecentBreach {
-  id: string;
-  rule_name: string;
-  rule_type: string;
-  market: string;
-  symbol: string;
-  status: string;
-  created_at: string;
-}
-
-interface ExpiringCooldown {
-  id: string;
-  rule_name: string;
-  market: string;
-  symbol: string;
-  expires_at: string;
-}
+import { queryKeys, defaultQueryOptions } from '@/lib/utils/queryKeys';
+import { formatTimeAgo } from '@/lib/utils/dateUtils';
+import { RecentBreach, ExpiringCooldown } from '@/lib/api/types';
 
 const DashboardTables = () => {
   const navigate = useNavigate();
@@ -39,36 +25,22 @@ const DashboardTables = () => {
   console.log('📋 Dashboard Tables - API params:', { startDate, endDate, providerId });
 
   const { data: recentBreaches, isLoading: breachesLoading } = useQuery<RecentBreach[]>({
-    queryKey: ['recent-breaches', startDate, endDate, providerId, filters.timeRange.preset],
+    queryKey: queryKeys.dashboard.recentBreaches(startDate, endDate, providerId, filters.timeRange.preset),
     queryFn: () => {
       console.log('📋 Fetching recent breaches with params:', { startDate, endDate, providerId });
       return fetchRecentBreaches(10);
     },
-    refetchInterval: 60000,
-    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
+    ...defaultQueryOptions,
   });
 
   const { data: expiringCooldowns, isLoading: cooldownsLoading } = useQuery<ExpiringCooldown[]>({
-    queryKey: ['expiring-cooldowns', providerId, filters.provider.providerId],
+    queryKey: queryKeys.dashboard.expiringCooldowns(providerId),
     queryFn: () => {
       console.log('⏰ Fetching expiring cooldowns with provider:', providerId);
       return fetchExpiringCooldowns(10);
     },
-    refetchInterval: 60000,
-    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
+    ...defaultQueryOptions,
   });
-
-  const formatTimeAgo = (date: string) => {
-    const now = new Date();
-    const past = new Date(date);
-    const diffMs = now.getTime() - past.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMins / 60);
-    
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return `${Math.floor(diffHours / 24)}d ago`;
-  };
 
   const handleEndCooldown = (cooldownId: string) => {
     console.log('Ending cooldown:', cooldownId);

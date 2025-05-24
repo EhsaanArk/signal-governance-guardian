@@ -1,9 +1,10 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchHeatmapData, fetchTopBreachedRules } from '@/lib/api/dashboard';
+import { DashboardService } from '@/lib/api/dashboardService';
 import { Market } from '@/types/database';
 import { useDashboardFilters } from './useDashboardFilters';
+import { queryKeys, defaultQueryOptions } from '@/lib/utils/queryKeys';
 
 export const useDashboardCharts = () => {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
@@ -13,20 +14,17 @@ export const useDashboardCharts = () => {
 
   const { startDate, endDate, providerId } = getApiDateParams();
 
-  console.log('🔄 Dashboard charts - API params:', { startDate, endDate, providerId });
-
   const { data: heatmapData, isLoading: heatmapLoading } = useQuery({
-    queryKey: ['dashboard-heatmap', startDate, endDate, providerId, filters.timeRange.preset],
+    queryKey: queryKeys.dashboard.heatmap(startDate, endDate, providerId, filters.timeRange.preset),
     queryFn: () => {
       console.log('🔥 Fetching heatmap with params:', { startDate, endDate, providerId });
-      return fetchHeatmapData(startDate, endDate, providerId);
+      return DashboardService.fetchHeatmapData({ startDate, endDate, providerId });
     },
-    refetchInterval: 60000,
-    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
+    ...defaultQueryOptions,
   });
 
   const { data: topRulesData, isLoading: rulesLoading } = useQuery({
-    queryKey: ['dashboard-top-rules', selectedMarket, startDate, endDate, providerId, filters.timeRange.preset],
+    queryKey: queryKeys.dashboard.topRules(selectedMarket, startDate, endDate, providerId, filters.timeRange.preset),
     queryFn: () => {
       console.log('📈 Fetching top rules with params:', { 
         selectedMarket, 
@@ -35,10 +33,9 @@ export const useDashboardCharts = () => {
         providerId,
         timeRangePreset: filters.timeRange.preset
       });
-      return fetchTopBreachedRules(selectedMarket, startDate, endDate, providerId);
+      return DashboardService.fetchTopBreachedRules(selectedMarket, { startDate, endDate, providerId });
     },
-    refetchInterval: 60000,
-    staleTime: 0, // Consider data stale immediately to ensure fresh data on filter changes
+    ...defaultQueryOptions,
   });
 
   return {
