@@ -23,9 +23,7 @@ export const useBreachEventsWithFilters = (filters: BreachFiltersState) => {
         market: filters.market,
         providerId: filters.providerId,
         ruleSetId: filters.ruleSetId,
-        providerSearch: filters.providerSearch,
-        selectedRuleTypes: filters.selectedRuleTypes,
-        selectedActions: filters.selectedActions
+        providerSearch: filters.providerSearch
       });
 
       try {
@@ -50,14 +48,6 @@ export const useBreachEventsWithFilters = (filters: BreachFiltersState) => {
         
         filteredBreaches = BreachFilters.applyRuleSetFilter(filteredBreaches, filters.ruleSetId);
         console.log(`📋 After rule set filtering: ${filteredBreaches.length} breach events`);
-
-        // Apply rule type filter
-        filteredBreaches = BreachFilters.applyRuleTypeFilter(filteredBreaches, filters.selectedRuleTypes);
-        console.log(`🔧 After rule type filtering: ${filteredBreaches.length} breach events`);
-
-        // Apply action filter
-        filteredBreaches = BreachFilters.applyActionFilter(filteredBreaches, filters.selectedActions);
-        console.log(`⚡ After action filtering: ${filteredBreaches.length} breach events`);
 
         // Apply provider ID filter if selected
         if (filters.providerId) {

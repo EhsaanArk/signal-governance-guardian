@@ -1,9 +1,9 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DateRange } from 'react-day-picker';
 import { Market } from '@/types/database';
 import { TimeRangePreset, TIME_RANGE_PRESETS } from '@/components/breaches/TimeRangeSelector';
-import { RuleType, ActionType } from '@/types/breach';
 
 export interface BreachFiltersState {
   timeRangePreset: TimeRangePreset;
@@ -13,8 +13,6 @@ export interface BreachFiltersState {
   market: Market | 'All';
   ruleSetId: string;
   providerSearch: string;
-  selectedRuleTypes: RuleType[];
-  selectedActions: ActionType[];
 }
 
 const getDateRangeFromPreset = (preset: TimeRangePreset): DateRange => {
@@ -61,8 +59,6 @@ export const useBreachFilters = () => {
     const providerNameParam = searchParams.get('providerName');
     const marketParam = searchParams.get('market') as Market | 'All' | null;
     const ruleParam = searchParams.get('rule') || searchParams.get('ruleSet');
-    const ruleTypeParam = searchParams.get('ruleType');
-    const actionParam = searchParams.get('action');
     
     let timeRangePreset: TimeRangePreset = '24h';
     let dateRange: DateRange | undefined;
@@ -80,16 +76,6 @@ export const useBreachFilters = () => {
       dateRange = getDateRangeFromPreset('24h');
     }
 
-    // Parse rule types from URL
-    const selectedRuleTypes: RuleType[] = ruleTypeParam 
-      ? ruleTypeParam.split(',').filter(rt => ['CO', 'GD', 'AC', 'PC'].includes(rt)) as RuleType[]
-      : [];
-
-    // Parse actions from URL
-    const selectedActions: ActionType[] = actionParam 
-      ? actionParam.split(',').filter(a => ['paused', 'rejected', 'suspended'].includes(a)) as ActionType[]
-      : [];
-
     return {
       timeRangePreset,
       dateRange,
@@ -97,9 +83,7 @@ export const useBreachFilters = () => {
       providerName: providerNameParam || null,
       market: marketParam || 'All',
       ruleSetId: ruleParam || 'all',
-      providerSearch: '',
-      selectedRuleTypes,
-      selectedActions
+      providerSearch: ''
     };
   });
 
@@ -148,19 +132,9 @@ export const useBreachFilters = () => {
       newSearchParams.delete('ruleSet');
     }
     
-    // Handle rule type params
-    if (updatedFilters.selectedRuleTypes.length > 0) {
-      newSearchParams.set('ruleType', updatedFilters.selectedRuleTypes.join(','));
-    } else {
-      newSearchParams.delete('ruleType');
-    }
-    
-    // Handle action params
-    if (updatedFilters.selectedActions.length > 0) {
-      newSearchParams.set('action', updatedFilters.selectedActions.join(','));
-    } else {
-      newSearchParams.delete('action');
-    }
+    // Clean up any leftover rule type and action params
+    newSearchParams.delete('ruleType');
+    newSearchParams.delete('action');
     
     setSearchParams(newSearchParams);
   }, [filters, searchParams, setSearchParams]);
@@ -194,14 +168,6 @@ export const useBreachFilters = () => {
     updateFilters({ providerSearch });
   }, [updateFilters]);
 
-  const setRuleTypes = useCallback((selectedRuleTypes: RuleType[]) => {
-    updateFilters({ selectedRuleTypes });
-  }, [updateFilters]);
-
-  const setActions = useCallback((selectedActions: ActionType[]) => {
-    updateFilters({ selectedActions });
-  }, [updateFilters]);
-
   const clearAllFilters = useCallback(() => {
     const defaultDateRange = getDateRangeFromPreset('24h');
     setFilters({
@@ -211,9 +177,7 @@ export const useBreachFilters = () => {
       providerName: null,
       market: 'All',
       ruleSetId: 'all',
-      providerSearch: '',
-      selectedRuleTypes: [],
-      selectedActions: []
+      providerSearch: ''
     });
     setSearchParams(new URLSearchParams());
   }, [setSearchParams]);
@@ -222,9 +186,7 @@ export const useBreachFilters = () => {
     return filters.timeRangePreset !== '24h' ||
            filters.providerId !== null ||
            filters.market !== 'All' ||
-           filters.ruleSetId !== 'all' ||
-           filters.selectedRuleTypes.length > 0 ||
-           filters.selectedActions.length > 0;
+           filters.ruleSetId !== 'all';
   }, [filters]);
 
   return {
@@ -235,8 +197,6 @@ export const useBreachFilters = () => {
     setMarket,
     setRuleSet,
     setProviderSearch,
-    setRuleTypes,
-    setActions,
     clearAllFilters,
     hasActiveFilters: hasActiveFilters()
   };

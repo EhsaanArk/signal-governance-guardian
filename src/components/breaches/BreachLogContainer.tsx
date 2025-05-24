@@ -17,8 +17,6 @@ const BreachLogContainer: React.FC = () => {
     setMarket,
     setRuleSet,
     setProviderSearch,
-    setRuleTypes,
-    setActions,
     clearAllFilters,
     hasActiveFilters
   } = useBreachFilters();
@@ -65,8 +63,6 @@ const BreachLogContainer: React.FC = () => {
         dateRange={filters.dateRange}
         selectedProviderId={filters.providerId}
         selectedProviderName={filters.providerName}
-        selectedRuleTypes={filters.selectedRuleTypes}
-        selectedActions={filters.selectedActions}
         hasActiveFilters={hasActiveFilters}
         ruleSets={ruleSetOptions}
         onMarketChange={setMarket}
@@ -75,8 +71,6 @@ const BreachLogContainer: React.FC = () => {
         onTimeRangePresetChange={setTimeRangePreset}
         onCustomDateRangeChange={setCustomDateRange}
         onProviderChange={setProvider}
-        onRuleTypeChange={setRuleTypes}
-        onActionChange={setActions}
         onClearFilters={clearAllFilters}
       />
       
