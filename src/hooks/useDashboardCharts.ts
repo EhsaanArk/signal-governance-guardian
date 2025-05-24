@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { DashboardService } from '@/lib/api/dashboardService';
 import { Market } from '@/types/database';
-import { useDashboardFilters } from './useDashboardFilters';
+import { useDashboardContext } from './useDashboardContext';
 import { queryKeys, defaultQueryOptions } from '@/lib/utils/queryKeys';
 
 export const useDashboardCharts = () => {
   const [selectedMarket, setSelectedMarket] = useState<Market | 'All'>('All');
-  const { getApiDateParams, filters } = useDashboardFilters();
+  const { getApiDateParams, filters } = useDashboardContext();
 
   console.log('📊 Dashboard charts hook - current filters:', filters);
 

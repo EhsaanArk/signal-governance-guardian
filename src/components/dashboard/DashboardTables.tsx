@@ -10,14 +10,14 @@ import { fetchExpiringCooldowns } from '@/lib/api/cooldowns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import ComplianceTooltip from '@/components/common/ComplianceTooltip';
-import { useDashboardFilters } from '@/hooks/useDashboardFilters';
+import { useDashboardContext } from '@/hooks/useDashboardContext';
 import { queryKeys, defaultQueryOptions } from '@/lib/utils/queryKeys';
 import { formatTimeAgo } from '@/lib/utils/dateUtils';
 import { RecentBreach, ExpiringCooldown } from '@/lib/api/types';
 
 const DashboardTables = () => {
   const navigate = useNavigate();
-  const { getApiDateParams, getDisplayContext, filters } = useDashboardFilters();
+  const { filters, getApiDateParams, getContextualTitle } = useDashboardContext();
 
   const { startDate, endDate, providerId } = getApiDateParams();
 
@@ -44,11 +44,6 @@ const DashboardTables = () => {
 
   const handleEndCooldown = (cooldownId: string) => {
     console.log('Ending cooldown:', cooldownId);
-  };
-
-  const getContextualTitle = (baseTitle: string) => {
-    const context = getDisplayContext();
-    return context ? `${baseTitle} ${context}` : baseTitle;
   };
 
   return (

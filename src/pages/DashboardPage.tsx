@@ -9,10 +9,10 @@ import LiveTicker from '@/components/dashboard/LiveTicker';
 import TimeRangeSelector from '@/components/dashboard/TimeRangeSelector';
 import ProviderSelector from '@/components/dashboard/ProviderSelector';
 import FilteredProviderIndicator from '@/components/dashboard/FilteredProviderIndicator';
-import { useDashboardFilters } from '@/hooks/useDashboardFilters';
+import { useDashboardContext } from '@/hooks/useDashboardContext';
 
 const DashboardPage = () => {
-  const { filters, setProvider, isProviderFiltered } = useDashboardFilters();
+  const { filters, setProvider, isProviderFiltered } = useDashboardContext();
 
   return (
     <MainLayout>
