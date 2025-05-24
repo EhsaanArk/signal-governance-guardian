@@ -8,6 +8,18 @@ import { fetchDashboardMetrics } from '@/lib/api/dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 
+interface KPICard {
+  title: string;
+  tooltip: string;
+  value: string | number;
+  displayValue?: number;
+  timeLabel?: string;
+  icon: React.ElementType;
+  change: number;
+  isGoodWhenIncreasing: boolean;
+  onClick: () => void;
+}
+
 const DashboardKPICards = () => {
   const navigate = useNavigate();
   const { data: metrics, isLoading, error } = useQuery({
@@ -46,7 +58,7 @@ const DashboardKPICards = () => {
     );
   }
 
-  const cards = [
+  const cards: KPICard[] = [
     {
       title: 'Active Cool-downs',
       tooltip: 'Sum of unique providers currently in any cooldown period',
