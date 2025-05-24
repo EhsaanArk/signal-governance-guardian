@@ -44,6 +44,12 @@ const BreachLogContainer: React.FC = () => {
       const toDate = format(filters.dateRange.to, 'MMM dd, yyyy');
       return `No breaches found between ${fromDate} and ${toDate}. Try expanding the date range or adjusting other filters.`;
     }
+    
+    // Special message for default 24h period when no data exists
+    if (filters.timeRangePreset === '24h') {
+      return "No breaches found in the last 24 hours. Try selecting a longer time period like '7 days' to see more data.";
+    }
+    
     return "No breaches found for selected filters. Try adjusting the time range or clearing filters.";
   };
 

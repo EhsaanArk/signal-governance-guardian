@@ -41,7 +41,7 @@ const getDateRangeFromPreset = (preset: TimeRangePreset): DateRange => {
       return { from: from90d, to: now };
     default:
       const fromDefault = new Date(now);
-      fromDefault.setDate(fromDefault.getDate() - 7);
+      fromDefault.setDate(fromDefault.getDate() - 1);
       fromDefault.setHours(0, 0, 0, 0);
       return { from: fromDefault, to: now };
   }
@@ -58,9 +58,9 @@ export const useBreachFilters = () => {
     const providerParam = searchParams.get('provider');
     const providerNameParam = searchParams.get('providerName');
     const marketParam = searchParams.get('market') as Market | 'All' | null;
-    const ruleParam = searchParams.get('rule');
+    const ruleParam = searchParams.get('rule') || searchParams.get('ruleSet');
     
-    let timeRangePreset: TimeRangePreset = '7d'; // Changed default from '24h' to '7d'
+    let timeRangePreset: TimeRangePreset = '24h'; // Back to 24h default as per acceptance criteria
     let dateRange: DateRange | undefined;
     
     if (fromParam && toParam) {
@@ -73,7 +73,7 @@ export const useBreachFilters = () => {
       timeRangePreset = rangeParam as TimeRangePreset;
       dateRange = getDateRangeFromPreset(timeRangePreset);
     } else {
-      dateRange = getDateRangeFromPreset('7d'); // Changed default from '24h' to '7d'
+      dateRange = getDateRangeFromPreset('24h'); // Back to 24h default
     }
 
     return {
@@ -123,11 +123,13 @@ export const useBreachFilters = () => {
       newSearchParams.delete('market');
     }
     
-    // Handle rule set param
+    // Handle rule set param - use 'rule' as primary param name for consistency
     if (updatedFilters.ruleSetId !== 'all') {
       newSearchParams.set('rule', updatedFilters.ruleSetId);
+      newSearchParams.delete('ruleSet'); // Clean up any old ruleSet params
     } else {
       newSearchParams.delete('rule');
+      newSearchParams.delete('ruleSet');
     }
     
     setSearchParams(newSearchParams);
@@ -163,9 +165,9 @@ export const useBreachFilters = () => {
   }, [updateFilters]);
 
   const clearAllFilters = useCallback(() => {
-    const defaultDateRange = getDateRangeFromPreset('7d'); // Changed default from '24h' to '7d'
+    const defaultDateRange = getDateRangeFromPreset('24h'); // Back to 24h default
     setFilters({
-      timeRangePreset: '7d', // Changed default from '24h' to '7d'
+      timeRangePreset: '24h', // Back to 24h default
       dateRange: defaultDateRange,
       providerId: null,
       providerName: null,
@@ -177,7 +179,7 @@ export const useBreachFilters = () => {
   }, [setSearchParams]);
 
   const hasActiveFilters = useCallback(() => {
-    return filters.timeRangePreset !== '7d' || // Changed default comparison from '24h' to '7d'
+    return filters.timeRangePreset !== '24h' || // Back to 24h default comparison
            filters.providerId !== null ||
            filters.market !== 'All' ||
            filters.ruleSetId !== 'all';
