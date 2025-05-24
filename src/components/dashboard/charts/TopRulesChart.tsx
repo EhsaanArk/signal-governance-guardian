@@ -61,115 +61,118 @@ const TopRulesChart: React.FC<TopRulesChartProps> = ({
     return <Skeleton className="h-64 w-full" />;
   }
 
-  // Handle insufficient data variety
-  if (!topRulesData || topRulesData.length < 3) {
-    return (
-      <div className="h-64 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            Not enough variety in breaches last 24h
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            At least 3 distinct rules needed for chart
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const totalBreaches = topRulesData.reduce((sum, rule) => sum + rule.count, 0);
+  // Check if we have sufficient data
+  const hasInsufficientData = !topRulesData || topRulesData.length < 3;
+  const totalBreaches = topRulesData ? topRulesData.reduce((sum, rule) => sum + rule.count, 0) : 0;
 
   return (
     <div className="space-y-4">
-      {/* Header with market filter */}
+      {/* Header with market filter - ALWAYS rendered */}
       <div className="flex items-center justify-between">
         <h3 className="text-base lg:text-lg font-semibold">Top 5 Breach Rules</h3>
         <MarketFilter selectedMarket={selectedMarket} onMarketChange={onMarketChange} />
       </div>
       <p className="text-xs lg:text-sm text-muted-foreground">Most triggered in 24h</p>
 
-      {/* Donut Chart */}
-      <ChartContainer
-        config={{
-          count: { label: "Breaches" }
-        }}
-        className="h-64"
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
-              data={topRulesData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              paddingAngle={5}
-              dataKey="count"
-              className="cursor-pointer"
-            >
-              {topRulesData.map((entry, index) => (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={COLORS[index % COLORS.length]}
-                  className="hover:opacity-80 cursor-pointer"
-                  onClick={() => handleRuleClick(entry.ruleSetId)}
-                  tabIndex={0}
-                  onKeyDown={(e) => handleKeyDown(e, entry.ruleSetId)}
-                  role="button"
-                  aria-label={`${entry.name} – ${entry.count} breaches (${entry.percentage}%)`}
-                />
-              ))}
-            </Pie>
-            <ChartTooltip content={<ChartTooltipContent />} />
-          </PieChart>
-        </ResponsiveContainer>
-      </ChartContainer>
-      
-      {/* Enhanced Legend */}
-      <div className="space-y-2">
-        {topRulesData.map((rule, index) => (
-          <div 
-            key={rule.ruleSetId} 
-            className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
-            onClick={() => handleRuleClick(rule.ruleSetId)}
-            onKeyDown={(e) => handleKeyDown(e, rule.ruleSetId)}
-            tabIndex={0}
-            role="button"
-            aria-label={`${rule.name} – ${rule.count} breaches (${rule.percentage}%)`}
-          >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <div 
-                className="w-3 h-3 rounded-full flex-shrink-0"
-                style={{ backgroundColor: COLORS[index % COLORS.length] }}
-              />
-              <span className="truncate text-xs lg:text-sm font-medium">{rule.name}</span>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <span className="text-xs lg:text-sm">
-                {rule.count}
-                {totalBreaches >= 5 && (
-                  <span className="text-muted-foreground ml-1">
-                    ({rule.percentage}%)
-                  </span>
-                )}
-              </span>
-              <div 
-                className="flex items-center gap-1"
-                title={getTrendTooltip(rule.deltaPercentage, rule.trendDirection)}
-              >
-                {getTrendIcon(rule.trendDirection, rule.deltaPercentage)}
-                {rule.trendDirection !== 'flat' && (
-                  <span className={`text-xs ${
-                    rule.trendDirection === 'up' ? 'text-red-500' : 'text-green-500'
-                  }`}>
-                    {Math.abs(rule.deltaPercentage)}%
-                  </span>
-                )}
-              </div>
-            </div>
+      {/* Conditional content based on data availability */}
+      {hasInsufficientData ? (
+        // Insufficient data state with same height as chart
+        <div className="h-64 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Not enough variety in breaches last 24h
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              At least 3 distinct rules needed for chart
+            </p>
           </div>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <>
+          {/* Donut Chart */}
+          <ChartContainer
+            config={{
+              count: { label: "Breaches" }
+            }}
+            className="h-64"
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={topRulesData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="count"
+                  className="cursor-pointer"
+                >
+                  {topRulesData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={COLORS[index % COLORS.length]}
+                      className="hover:opacity-80 cursor-pointer"
+                      onClick={() => handleRuleClick(entry.ruleSetId)}
+                      tabIndex={0}
+                      onKeyDown={(e) => handleKeyDown(e, entry.ruleSetId)}
+                      role="button"
+                      aria-label={`${entry.name} – ${entry.count} breaches (${entry.percentage}%)`}
+                    />
+                  ))}
+                </Pie>
+                <ChartTooltip content={<ChartTooltipContent />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartContainer>
+          
+          {/* Enhanced Legend */}
+          <div className="space-y-2">
+            {topRulesData.map((rule, index) => (
+              <div 
+                key={rule.ruleSetId} 
+                className="flex items-center justify-between text-sm cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                onClick={() => handleRuleClick(rule.ruleSetId)}
+                onKeyDown={(e) => handleKeyDown(e, rule.ruleSetId)}
+                tabIndex={0}
+                role="button"
+                aria-label={`${rule.name} – ${rule.count} breaches (${rule.percentage}%)`}
+              >
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="truncate text-xs lg:text-sm font-medium">{rule.name}</span>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-xs lg:text-sm">
+                    {rule.count}
+                    {totalBreaches >= 5 && (
+                      <span className="text-muted-foreground ml-1">
+                        ({rule.percentage}%)
+                      </span>
+                    )}
+                  </span>
+                  <div 
+                    className="flex items-center gap-1"
+                    title={getTrendTooltip(rule.deltaPercentage, rule.trendDirection)}
+                  >
+                    {getTrendIcon(rule.trendDirection, rule.deltaPercentage)}
+                    {rule.trendDirection !== 'flat' && (
+                      <span className={`text-xs ${
+                        rule.trendDirection === 'up' ? 'text-red-500' : 'text-green-500'
+                      }`}>
+                        {Math.abs(rule.deltaPercentage)}%
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };
