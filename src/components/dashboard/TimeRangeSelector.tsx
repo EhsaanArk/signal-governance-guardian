@@ -20,17 +20,19 @@ const TimeRangeSelector = () => {
     to: filters.timeRange.to
   });
 
-  const handlePresetChange = (value: string) => {
+  const handlePresetChange = async (value: string) => {
     const preset = value as TimeRangePreset;
     
     if (preset === 'custom') {
       setCustomDialogOpen(true);
     } else {
-      handleFilterChange(() => setTimeRangePreset(preset));
+      await handleFilterChange(async () => {
+        await setTimeRangePreset(preset);
+      });
     }
   };
 
-  const handleCustomRangeApply = () => {
+  const handleCustomRangeApply = async () => {
     if (!tempDateRange?.from || !tempDateRange?.to) {
       toast({
         title: "Invalid Date Range",
@@ -41,7 +43,9 @@ const TimeRangeSelector = () => {
     }
 
     try {
-      handleFilterChange(() => setCustomTimeRange(tempDateRange.from!, tempDateRange.to!));
+      await handleFilterChange(async () => {
+        await setCustomTimeRange(tempDateRange.from!, tempDateRange.to!);
+      });
       setCustomDialogOpen(false);
       toast({
         title: "Custom Range Applied",
@@ -134,8 +138,10 @@ const TimeRangeSelector = () => {
                     variant={filters.timeRange.preset === key ? "default" : "outline"}
                     size="sm"
                     disabled={isTransitioning}
-                    onClick={() => {
-                      handleFilterChange(() => setTimeRangePreset(key as TimeRangePreset));
+                    onClick={async () => {
+                      await handleFilterChange(async () => {
+                        await setTimeRangePreset(key as TimeRangePreset);
+                      });
                       setCustomDialogOpen(false);
                     }}
                   >

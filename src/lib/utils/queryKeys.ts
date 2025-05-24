@@ -21,11 +21,12 @@ export const queryKeys = {
 } as const;
 
 export const defaultQueryOptions = {
-  staleTime: 0, // Consider data stale immediately for fresh filter changes
-  gcTime: 2 * 60 * 1000, // Reduced cache time to 2 minutes for faster updates
-  refetchInterval: 30000, // Refetch every 30 seconds for active queries
-  refetchOnWindowFocus: true, // Refetch when window gains focus
+  staleTime: 0, // Always consider data stale for immediate refresh
+  gcTime: 30 * 1000, // Very short cache time for rapid updates
+  refetchInterval: false, // Disable background refetch to avoid conflicts
+  refetchOnWindowFocus: false, // Disable to avoid conflicts with manual invalidation
   refetchOnMount: true, // Always refetch on mount
   refetchOnReconnect: true, // Refetch on network reconnect
-  retry: 1, // Reduce retries for faster feedback
+  retry: 2, // Reasonable retry count
+  retryDelay: 1000, // Quick retry for faster feedback
 } as const;

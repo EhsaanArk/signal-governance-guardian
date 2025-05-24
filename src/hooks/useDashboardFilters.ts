@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DateRange } from 'react-day-picker';
@@ -60,7 +61,6 @@ export const useDashboardFilters = () => {
   const queryClient = useQueryClient();
   
   const [filters, setFilters] = useState<DashboardFiltersState>(() => {
-    // Debug logging for URL parameters
     const rangeParam = searchParams.get('range');
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
@@ -88,7 +88,6 @@ export const useDashboardFilters = () => {
       timeRange = { preset, from, to };
       console.log(`📅 Setting time range to ${preset}:`, { from: from.toISOString(), to: to.toISOString() });
     } else {
-      // Default to 24h
       const { from, to } = getDateRangeFromPreset('24h');
       timeRange = { preset: '24h', from, to };
       console.log('📅 Defaulting to 24h time range:', { from: from.toISOString(), to: to.toISOString() });
@@ -96,76 +95,71 @@ export const useDashboardFilters = () => {
 
     const provider: ProviderState = {
       providerId: providerParam || null,
-      providerName: providerNameParam || null
+      providerName: providerNameParam ? decodeURIComponent(providerNameParam.replace(/\+/g, ' ')) : null
     };
 
     return { timeRange, provider };
   });
 
-  // Force immediate query invalidation when filters change
-  const forceRefreshQueries = useCallback(() => {
-    console.log('🔄 Force refreshing all dashboard queries');
+  // Immediate query invalidation function
+  const forceRefreshQueries = useCallback(async () => {
+    console.log('🔄 Starting immediate query refresh');
     
-    // Remove all cached dashboard data
+    // Step 1: Remove all cached dashboard data
+    await queryClient.cancelQueries({ queryKey: queryKeys.dashboard.all });
     queryClient.removeQueries({ queryKey: queryKeys.dashboard.all });
     
-    // Invalidate with immediate refetch
-    queryClient.invalidateQueries({ 
+    // Step 2: Invalidate and force immediate refetch
+    await queryClient.invalidateQueries({ 
       queryKey: queryKeys.dashboard.all,
       refetchType: 'active'
     });
+    
+    console.log('✅ Query refresh completed');
   }, [queryClient]);
 
-  const updateFilters = useCallback((newFilters: Partial<DashboardFiltersState>) => {
+  const updateFilters = useCallback(async (newFilters: Partial<DashboardFiltersState>) => {
     const updatedFilters = { ...filters, ...newFilters };
-    console.log('🔄 Updating filters:', updatedFilters);
+    console.log('🔄 Updating filters synchronously:', updatedFilters);
     
-    // Update state immediately
+    // Update state first
     setFilters(updatedFilters);
     
-    // Update URL parameters
-    const newSearchParams = new URLSearchParams(searchParams);
+    // Update URL parameters synchronously
+    const newSearchParams = new URLSearchParams();
     
     // Handle time range params
     if (updatedFilters.timeRange.preset === 'custom') {
       newSearchParams.set('from', updatedFilters.timeRange.from.toISOString().split('T')[0]);
       newSearchParams.set('to', updatedFilters.timeRange.to.toISOString().split('T')[0]);
-      newSearchParams.delete('range');
     } else {
       newSearchParams.set('range', updatedFilters.timeRange.preset);
-      newSearchParams.delete('from');
-      newSearchParams.delete('to');
     }
     
-    // Handle provider params
-    if (updatedFilters.provider.providerId) {
+    // Handle provider params with proper encoding
+    if (updatedFilters.provider.providerId && updatedFilters.provider.providerName) {
       newSearchParams.set('provider', updatedFilters.provider.providerId);
-      if (updatedFilters.provider.providerName) {
-        newSearchParams.set('providerName', updatedFilters.provider.providerName);
-      }
-    } else {
-      newSearchParams.delete('provider');
-      newSearchParams.delete('providerName');
+      newSearchParams.set('providerName', encodeURIComponent(updatedFilters.provider.providerName));
     }
     
+    // Update URL
     setSearchParams(newSearchParams);
     
-    // Force immediate refresh of queries with new filters
-    setTimeout(() => {
-      forceRefreshQueries();
-    }, 0);
-  }, [filters, searchParams, setSearchParams, forceRefreshQueries]);
+    // Force immediate query refresh
+    await forceRefreshQueries();
+  }, [filters, setSearchParams, forceRefreshQueries]);
 
-  const setTimeRangePreset = useCallback((preset: TimeRangePreset) => {
+  const setTimeRangePreset = useCallback(async (preset: TimeRangePreset) => {
+    console.log('📅 Setting time range preset:', preset);
     if (preset === 'custom') {
-      updateFilters({ timeRange: { ...filters.timeRange, preset } });
+      await updateFilters({ timeRange: { ...filters.timeRange, preset } });
     } else {
       const { from, to } = getDateRangeFromPreset(preset);
-      updateFilters({ timeRange: { preset, from, to } });
+      await updateFilters({ timeRange: { preset, from, to } });
     }
   }, [updateFilters, filters.timeRange]);
 
-  const setCustomTimeRange = useCallback((from: Date, to: Date) => {
+  const setCustomTimeRange = useCallback(async (from: Date, to: Date) => {
     const maxDays = 180;
     const daysDiff = Math.ceil((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
     
@@ -173,11 +167,13 @@ export const useDashboardFilters = () => {
       throw new Error(`Date range cannot exceed ${maxDays} days`);
     }
     
-    updateFilters({ timeRange: { preset: 'custom', from, to } });
+    console.log('📅 Setting custom time range:', { from: from.toISOString(), to: to.toISOString() });
+    await updateFilters({ timeRange: { preset: 'custom', from, to } });
   }, [updateFilters]);
 
-  const setProvider = useCallback((providerId: string | null, providerName: string | null) => {
-    updateFilters({ provider: { providerId, providerName } });
+  const setProvider = useCallback(async (providerId: string | null, providerName: string | null) => {
+    console.log('👤 Setting provider:', { providerId, providerName });
+    await updateFilters({ provider: { providerId, providerName } });
   }, [updateFilters]);
 
   const getComparePeriodDates = useCallback(() => {
@@ -192,10 +188,10 @@ export const useDashboardFilters = () => {
   }, [filters.timeRange]);
 
   const getApiDateParams = useCallback(() => {
-    // Clean providerId to prevent serialization issues
-    const cleanProviderId = filters.provider.providerId === 'undefined' || !filters.provider.providerId 
-      ? undefined 
-      : filters.provider.providerId;
+    // Ensure providerId is properly cleaned
+    const cleanProviderId = filters.provider.providerId && filters.provider.providerId !== 'undefined' 
+      ? filters.provider.providerId 
+      : undefined;
     
     const params = {
       startDate: filters.timeRange.from.toISOString(),
@@ -203,7 +199,7 @@ export const useDashboardFilters = () => {
       providerId: cleanProviderId
     };
     
-    console.log('🌐 Clean API date params:', params);
+    console.log('🌐 API params generated:', params);
     return params;
   }, [filters]);
 

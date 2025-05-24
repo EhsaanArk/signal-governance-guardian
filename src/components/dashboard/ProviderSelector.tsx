@@ -16,7 +16,7 @@ interface Provider {
 
 interface ProviderSelectorProps {
   selectedProviderId: string | null;
-  onProviderChange: (providerId: string | null, providerName: string | null) => void;
+  onProviderChange: (providerId: string | null, providerName: string | null) => Promise<void>;
 }
 
 const ProviderSelector: React.FC<ProviderSelectorProps> = ({
@@ -49,12 +49,12 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
 
   const selectedProvider = providers?.find(p => p.id === selectedProviderId);
 
-  const handleProviderSelect = (provider: Provider | null) => {
-    handleFilterChange(() => {
+  const handleProviderSelect = async (provider: Provider | null) => {
+    await handleFilterChange(async () => {
       if (provider) {
-        onProviderChange(provider.id, provider.provider_name);
+        await onProviderChange(provider.id, provider.provider_name);
       } else {
-        onProviderChange(null, null);
+        await onProviderChange(null, null);
       }
     });
     setOpen(false);
@@ -96,9 +96,9 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               {selectedProviderId && !isTransitioning && (
                 <X 
                   className="h-3 w-3 hover:bg-muted rounded-sm p-0.5 cursor-pointer"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.stopPropagation();
-                    handleProviderSelect(null);
+                    await handleProviderSelect(null);
                   }}
                 />
               )}
