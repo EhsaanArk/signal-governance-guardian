@@ -1,8 +1,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
 
 interface HeaderProps {
   title: string;
@@ -21,16 +19,6 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, rightContent, action }
         <div>
           <h1 className="text-lg font-semibold">{title}</h1>
           {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-        </div>
-      </div>
-      <div className="hidden md:flex flex-1 items-center gap-2">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Global Search"
-            className="w-full bg-background pl-8 md:w-[300px] lg:w-[400px]"
-          />
         </div>
       </div>
       {rightContent && (
