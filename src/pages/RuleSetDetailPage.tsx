@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -227,7 +226,7 @@ const RuleSetDetailPage: React.FC = () => {
       <Header 
         title={ruleSet.name}
         subtitle={ruleSet.description}
-        action={createHeaderAction()}
+        rightContent={createHeaderAction()}
       />
       
       <div className="p-6">
