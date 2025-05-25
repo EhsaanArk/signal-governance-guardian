@@ -21,13 +21,17 @@ interface RuleSet {
 interface AssignRuleSetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  providerName: string;
+  providerName?: string;
+  providerNames?: string[];
+  isBulk?: boolean;
 }
 
 const AssignRuleSetModal: React.FC<AssignRuleSetModalProps> = ({
   isOpen,
   onClose,
-  providerName
+  providerName,
+  providerNames = [],
+  isBulk = false
 }) => {
   const { toast } = useToast();
   const [selectedRuleSets, setSelectedRuleSets] = useState<string[]>([]);
@@ -85,12 +89,21 @@ const AssignRuleSetModal: React.FC<AssignRuleSetModalProps> = ({
       .filter(rs => selectedRuleSets.includes(rs.id))
       .map(rs => rs.name);
 
-    toast({
-      title: "Rule-sets assigned (mock)",
-      description: selectedNames.length > 0 
-        ? `Assigned ${selectedNames.join(', ')} to ${providerName}`
-        : `No rule-sets selected for ${providerName}`,
-    });
+    if (isBulk) {
+      toast({
+        title: "Rule-sets assigned (mock)",
+        description: selectedNames.length > 0 
+          ? `Assigned ${selectedNames.length} rule-set${selectedNames.length > 1 ? 's' : ''} to ${providerNames.length} provider${providerNames.length > 1 ? 's' : ''}`
+          : `No rule-sets selected for ${providerNames.length} provider${providerNames.length > 1 ? 's' : ''}`,
+      });
+    } else {
+      toast({
+        title: "Rule-sets assigned (mock)",
+        description: selectedNames.length > 0 
+          ? `Assigned ${selectedNames.join(', ')} to ${providerName}`
+          : `No rule-sets selected for ${providerName}`,
+      });
+    }
 
     setSelectedRuleSets([]);
     onClose();
@@ -101,11 +114,15 @@ const AssignRuleSetModal: React.FC<AssignRuleSetModalProps> = ({
     onClose();
   };
 
+  const displayTitle = isBulk 
+    ? `Assign Rule-sets to ${providerNames.length} provider${providerNames.length > 1 ? 's' : ''}`
+    : `Assign Rule-sets to ${providerName}`;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Assign Rule-sets to {providerName}</DialogTitle>
+          <DialogTitle>{displayTitle}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4 max-h-96 overflow-y-auto">

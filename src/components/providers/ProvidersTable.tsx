@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { MoreHorizontal, User } from 'lucide-react';
 import {
   Table,
@@ -24,28 +24,19 @@ import { Provider } from '@/types/provider';
 
 interface ProvidersTableProps {
   providers: Provider[];
+  selectedProviders: string[];
   onProviderClick: (providerId: string) => void;
+  onProviderSelect: (providerId: string) => void;
+  onSelectAll: () => void;
 }
 
-const ProvidersTable: React.FC<ProvidersTableProps> = ({ providers, onProviderClick }) => {
-  const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
-
-  const toggleProvider = (providerId: string) => {
-    setSelectedProviders(prev =>
-      prev.includes(providerId)
-        ? prev.filter(id => id !== providerId)
-        : [...prev, providerId]
-    );
-  };
-
-  const toggleAll = () => {
-    if (selectedProviders.length === providers.length) {
-      setSelectedProviders([]);
-    } else {
-      setSelectedProviders(providers.map(p => p.id));
-    }
-  };
-
+const ProvidersTable: React.FC<ProvidersTableProps> = ({ 
+  providers, 
+  selectedProviders, 
+  onProviderClick, 
+  onProviderSelect,
+  onSelectAll 
+}) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active': return 'bg-green-500';
@@ -74,113 +65,108 @@ const ProvidersTable: React.FC<ProvidersTableProps> = ({ providers, onProviderCl
     onProviderClick(provider.id);
   };
 
-  return (
-    <div className="space-y-4">
-      {selectedProviders.length > 0 && (
-        <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
-          <span className="text-sm text-muted-foreground">
-            {selectedProviders.length} provider(s) selected
-          </span>
-          <Button variant="outline" size="sm">Suspend</Button>
-          <Button variant="outline" size="sm">Reinstate</Button>
-          <Button variant="outline" size="sm">Assign Rule-Set</Button>
-        </div>
-      )}
+  // Calculate checkbox state for header
+  const allSelected = providers.length > 0 && selectedProviders.length === providers.length;
+  const someSelected = selectedProviders.length > 0 && selectedProviders.length < providers.length;
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-12">
+              <Checkbox
+                checked={allSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = someSelected;
+                }}
+                onCheckedChange={onSelectAll}
+                aria-label="Select all providers on this page"
+              />
+            </TableHead>
+            <TableHead>Name</TableHead>
+            <TableHead>Markets</TableHead>
+            <TableHead>Followers</TableHead>
+            <TableHead>30-d PnL</TableHead>
+            <TableHead>Draw-down</TableHead>
+            <TableHead>Breaches</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="w-12"></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {providers.map((provider) => (
+            <TableRow 
+              key={provider.id}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={(e) => handleRowClick(provider, e)}
+            >
+              <TableCell>
                 <Checkbox
-                  checked={selectedProviders.length === providers.length}
-                  onCheckedChange={toggleAll}
+                  checked={selectedProviders.includes(provider.id)}
+                  onCheckedChange={() => onProviderSelect(provider.id)}
                 />
-              </TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Markets</TableHead>
-              <TableHead>Followers</TableHead>
-              <TableHead>30-d PnL</TableHead>
-              <TableHead>Draw-down</TableHead>
-              <TableHead>Breaches</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-12"></TableHead>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium">{provider.provider_name}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex gap-1">
+                  {provider.markets.map((market) => (
+                    <MarketChip key={market} market={market} />
+                  ))}
+                </div>
+              </TableCell>
+              <TableCell>{provider.followers?.toLocaleString() || '---'}</TableCell>
+              <TableCell>
+                <span className={getPnLColor(provider.pnl30d || 0)}>
+                  {provider.pnl30d ? `${provider.pnl30d > 0 ? '+' : ''}${provider.pnl30d.toFixed(1)}%` : '---'}
+                </span>
+              </TableCell>
+              <TableCell>
+                <span className={getPnLColor(-(provider.drawdown || 0))}>
+                  {provider.drawdown ? `-${provider.drawdown.toFixed(1)}%` : '---'}
+                </span>
+              </TableCell>
+              <TableCell>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                  {provider.breaches || 0}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${getStatusColor(provider.status)}`} />
+                  <span className="text-sm">{provider.status}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleMenuClick(provider)}>
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleMenuClick(provider)}>
+                      Manage
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {providers.map((provider) => (
-              <TableRow 
-                key={provider.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={(e) => handleRowClick(provider, e)}
-              >
-                <TableCell>
-                  <Checkbox
-                    checked={selectedProviders.includes(provider.id)}
-                    onCheckedChange={() => toggleProvider(provider.id)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback>
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{provider.provider_name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-1">
-                    {provider.markets.map((market) => (
-                      <MarketChip key={market} market={market} />
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell>{provider.followers?.toLocaleString() || '---'}</TableCell>
-                <TableCell>
-                  <span className={getPnLColor(provider.pnl30d || 0)}>
-                    {provider.pnl30d ? `${provider.pnl30d > 0 ? '+' : ''}${provider.pnl30d.toFixed(1)}%` : '---'}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <span className={getPnLColor(-(provider.drawdown || 0))}>
-                    {provider.drawdown ? `-${provider.drawdown.toFixed(1)}%` : '---'}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                    {provider.breaches || 0}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${getStatusColor(provider.status)}`} />
-                    <span className="text-sm">{provider.status}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleMenuClick(provider)}>
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleMenuClick(provider)}>
-                        Manage
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };

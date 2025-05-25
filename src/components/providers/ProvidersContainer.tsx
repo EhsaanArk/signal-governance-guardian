@@ -4,13 +4,22 @@ import { useQuery } from '@tanstack/react-query';
 import ProvidersFilter from './ProvidersFilter';
 import ProvidersTable from './ProvidersTable';
 import ProviderDrawer from './ProviderDrawer';
+import BulkToolbar from './BulkToolbar';
+import BulkConfirmModal from './BulkConfirmModal';
+import AssignRuleSetModal from './AssignRuleSetModal';
 import { fetchProviders } from '@/lib/api/providers';
 import { useProvidersFilters } from '@/hooks/useProvidersFilters';
+import { useToast } from '@/hooks/use-toast';
 import { Provider } from '@/types/provider';
 
 const ProvidersContainer: React.FC = () => {
+  const { toast } = useToast();
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [providers, setProviders] = useState<Provider[]>([]);
+  const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'suspend' | 'reinstate'>('suspend');
+  const [assignRuleSetModalOpen, setAssignRuleSetModalOpen] = useState(false);
 
   const {
     filters,
@@ -30,9 +39,12 @@ const ProvidersContainer: React.FC = () => {
   // Update providers when fetch completes
   React.useEffect(() => {
     setProviders(fetchedProviders);
+    // Clear selection when data changes (e.g., pagination, filtering)
+    setSelectedProviders([]);
   }, [fetchedProviders]);
 
   const selectedProvider = providers.find(p => p.id === selectedProviderId) || null;
+  const selectedProviderObjects = providers.filter(p => selectedProviders.includes(p.id));
 
   const handleProviderClick = (providerId: string) => {
     setSelectedProviderId(providerId);
@@ -52,6 +64,73 @@ const ProvidersContainer: React.FC = () => {
     );
   };
 
+  const handleProviderSelect = (providerId: string) => {
+    setSelectedProviders(prev =>
+      prev.includes(providerId)
+        ? prev.filter(id => id !== providerId)
+        : [...prev, providerId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProviders.length === providers.length) {
+      setSelectedProviders([]);
+    } else {
+      setSelectedProviders(providers.map(p => p.id));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProviders([]);
+  };
+
+  const handleBulkSuspend = () => {
+    setConfirmAction('suspend');
+    setConfirmModalOpen(true);
+  };
+
+  const handleBulkReinstate = () => {
+    setConfirmAction('reinstate');
+    setConfirmModalOpen(true);
+  };
+
+  const handleConfirmAction = () => {
+    const newStatus = confirmAction === 'suspend' ? 'Suspended' : 'Active';
+    const actionText = confirmAction === 'suspend' ? 'suspended' : 'reinstated';
+    
+    // Update providers that match the action
+    setProviders(prev =>
+      prev.map(provider => {
+        if (selectedProviders.includes(provider.id)) {
+          // Only update if the action is relevant to the current status
+          if (confirmAction === 'suspend' && provider.status === 'Active') {
+            return { ...provider, status: newStatus as Provider['status'] };
+          } else if (confirmAction === 'reinstate' && provider.status === 'Suspended') {
+            return { ...provider, status: newStatus as Provider['status'] };
+          }
+        }
+        return provider;
+      })
+    );
+
+    toast({
+      title: `Providers ${actionText} (mock)`,
+      description: `${selectedProviderObjects.length} provider${selectedProviderObjects.length > 1 ? 's' : ''} ${actionText}`,
+    });
+
+    setConfirmModalOpen(false);
+    setSelectedProviders([]);
+  };
+
+  const handleBulkAssignRuleSets = () => {
+    setAssignRuleSetModalOpen(true);
+  };
+
+  const handleAssignRuleSetModalClose = () => {
+    setAssignRuleSetModalOpen(false);
+    setSelectedProviders([]);
+  };
+
   return (
     <>
       <ProvidersFilter
@@ -67,7 +146,7 @@ const ProvidersContainer: React.FC = () => {
         onClearFilters={clearAllFilters}
       />
       
-      <div className="p-6">
+      <div className="p-6 pb-20">
         {isLoading ? (
           <div className="text-center py-10">
             <p className="text-muted-foreground">Loading providers...</p>
@@ -79,10 +158,37 @@ const ProvidersContainer: React.FC = () => {
         ) : (
           <ProvidersTable 
             providers={providers} 
+            selectedProviders={selectedProviders}
             onProviderClick={handleProviderClick}
+            onProviderSelect={handleProviderSelect}
+            onSelectAll={handleSelectAll}
           />
         )}
       </div>
+
+      <BulkToolbar
+        selectedCount={selectedProviders.length}
+        selectedProviders={selectedProviderObjects}
+        onSuspend={handleBulkSuspend}
+        onReinstate={handleBulkReinstate}
+        onAssignRuleSets={handleBulkAssignRuleSets}
+        onClearSelection={handleClearSelection}
+      />
+
+      <BulkConfirmModal
+        isOpen={confirmModalOpen}
+        onClose={() => setConfirmModalOpen(false)}
+        onConfirm={handleConfirmAction}
+        action={confirmAction}
+        providers={selectedProviderObjects}
+      />
+
+      <AssignRuleSetModal
+        isOpen={assignRuleSetModalOpen}
+        onClose={handleAssignRuleSetModalClose}
+        isBulk={true}
+        providerNames={selectedProviderObjects.map(p => p.provider_name)}
+      />
 
       <ProviderDrawer
         isOpen={!!selectedProviderId}
