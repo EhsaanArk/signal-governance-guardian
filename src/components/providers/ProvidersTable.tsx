@@ -37,6 +37,8 @@ const ProvidersTable: React.FC<ProvidersTableProps> = ({
   onProviderSelect,
   onSelectAll 
 }) => {
+  const checkboxRef = React.useRef<HTMLButtonElement>(null);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Active': return 'bg-green-500';
@@ -69,6 +71,16 @@ const ProvidersTable: React.FC<ProvidersTableProps> = ({
   const allSelected = providers.length > 0 && selectedProviders.length === providers.length;
   const someSelected = selectedProviders.length > 0 && selectedProviders.length < providers.length;
 
+  // Update indeterminate state when selection changes
+  React.useEffect(() => {
+    if (checkboxRef.current) {
+      const checkboxElement = checkboxRef.current.querySelector('input[type="checkbox"]') as HTMLInputElement;
+      if (checkboxElement) {
+        checkboxElement.indeterminate = someSelected;
+      }
+    }
+  }, [someSelected]);
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -76,10 +88,8 @@ const ProvidersTable: React.FC<ProvidersTableProps> = ({
           <TableRow>
             <TableHead className="w-12">
               <Checkbox
+                ref={checkboxRef}
                 checked={allSelected}
-                ref={(el) => {
-                  if (el) el.indeterminate = someSelected;
-                }}
                 onCheckedChange={onSelectAll}
                 aria-label="Select all providers on this page"
               />
