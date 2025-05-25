@@ -22,7 +22,8 @@ export class DashboardFiltersService {
       parts.push(`for ${context.provider.providerName}`);
     }
     
-    if (context.timeRange?.preset !== '24h') {
+    // Changed default check from 24h to 30d
+    if (context.timeRange?.preset !== '30d') {
       const label = this.getTimeRangeDisplayLabel(context.timeRange);
       parts.push(`in ${label.toLowerCase()}`);
     }
@@ -31,7 +32,7 @@ export class DashboardFiltersService {
   }
 
   static getTimeRangeDisplayLabel(timeRange?: { preset: TimeRangePreset; from: Date; to: Date }): string {
-    if (!timeRange) return 'Last 24 hours';
+    if (!timeRange) return 'Last 30 days';
     
     if (timeRange.preset === 'custom') {
       return `${timeRange.from.toLocaleDateString()} - ${timeRange.to.toLocaleDateString()}`;
@@ -44,13 +45,13 @@ export class DashboardFiltersService {
       '90d': 'Last 90 days'
     };
     
-    return labels[timeRange.preset] || 'Last 24 hours';
+    return labels[timeRange.preset] || 'Last 30 days';
   }
 
   static getApiDateParams(filters: FilterContext) {
     const timeRange = filters.timeRange || {
-      preset: '24h' as TimeRangePreset,
-      ...getDefaultDateRange('24h')
+      preset: '30d' as TimeRangePreset,
+      ...getDefaultDateRange('30d')
     };
     
     // Fix: Properly handle null/undefined providerId without serialization
@@ -80,7 +81,7 @@ export class DashboardFiltersService {
       '90d': '90-d',
       'custom': 'Period'
     };
-    return labels[preset] || '24-h';
+    return labels[preset] || '30-d';
   }
 
   static getPeriodLabel(preset: TimeRangePreset): string {
@@ -91,6 +92,6 @@ export class DashboardFiltersService {
       '90d': 'last 90 days',
       'custom': 'selected period'
     };
-    return labels[preset] || 'last 24 hours';
+    return labels[preset] || 'last 30 days';
   }
 }

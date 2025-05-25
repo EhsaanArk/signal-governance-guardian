@@ -43,9 +43,10 @@ export const useDashboardFilters = () => {
       timeRange = { preset, from, to };
       console.log(`📅 Setting time range to ${preset}:`, { from: from.toISOString(), to: to.toISOString() });
     } else {
-      const { from, to } = getDateRangeFromPreset('24h');
-      timeRange = { preset: '24h', from, to };
-      console.log('📅 Defaulting to 24h time range:', { from: from.toISOString(), to: to.toISOString() });
+      // Changed default from 24h to 30d
+      const { from, to } = getDateRangeFromPreset('30d');
+      timeRange = { preset: '30d', from, to };
+      console.log('📅 Defaulting to 30d time range:', { from: from.toISOString(), to: to.toISOString() });
     }
 
     const provider: ProviderState = {
@@ -113,19 +114,45 @@ export const useDashboardFilters = () => {
       parts.push(`for ${filters.provider.providerName}`);
     }
     
-    if (filters.timeRange.preset !== '24h') {
+    if (filters.timeRange.preset !== '30d') {
       parts.push(`in ${timeRangeFilters.getTimeRangeDisplayLabel().toLowerCase()}`);
     }
     
     return parts.length > 0 ? parts.join(' ') : '';
   }, [filters, timeRangeFilters.getTimeRangeDisplayLabel]);
 
+  // Add reset filters function
+  const resetFilters = useCallback(async () => {
+    console.log('🔄 Resetting dashboard filters');
+    const { from, to } = getDateRangeFromPreset('30d');
+    const defaultFilters: DashboardFiltersState = {
+      timeRange: { preset: '30d', from, to },
+      provider: { providerId: null, providerName: null }
+    };
+    
+    setFilters(defaultFilters);
+    
+    // Clear URL params
+    const newSearchParams = new URLSearchParams();
+    newSearchParams.set('range', '30d');
+    setSearchParams(newSearchParams);
+    
+    console.log('✅ Dashboard filters reset to defaults');
+  }, [setSearchParams]);
+
+  const hasActiveFilters = useCallback(() => {
+    return filters.timeRange.preset !== '30d' || 
+           filters.provider.providerId !== null;
+  }, [filters]);
+
   return {
     filters,
     ...timeRangeFilters,
     ...providerFilters,
     getApiDateParams,
-    getDisplayContext
+    getDisplayContext,
+    resetFilters,
+    hasActiveFilters
   };
 };
 

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import MarketChip from '@/components/common/MarketChip';
@@ -42,15 +42,31 @@ const ProvidersFilter: React.FC<ProvidersFilterProps> = ({
   return (
     <div className="space-y-4 p-6 border-b">
       <div className="flex flex-col gap-4">
-        {/* Search */}
-        <div className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search providers..."
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10"
-          />
+        {/* Search and Reset Button Row */}
+        <div className="flex items-center gap-4 justify-between">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search providers..."
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          {/* Reset Button */}
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClearFilters}
+              className="h-10 px-3 whitespace-nowrap"
+              title="Reset all filters"
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset Filters
+            </Button>
+          )}
         </div>
 
         {/* Filter Groups */}
@@ -106,12 +122,6 @@ const ProvidersFilter: React.FC<ProvidersFilterProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Clear Filters */}
-        <FilterClearButton
-          hasActiveFilters={hasActiveFilters}
-          onClearFilters={onClearFilters}
-        />
       </div>
     </div>
   );

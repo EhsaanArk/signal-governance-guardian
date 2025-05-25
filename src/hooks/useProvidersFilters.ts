@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from 'react';
 import { Market } from '@/types/database';
 
@@ -32,12 +31,15 @@ export const useProvidersFilters = () => {
            performance !== 'All';
   }, [search, market, status, performance]);
 
-  const clearAllFilters = () => {
+  const resetAllFilters = () => {
     setSearch('');
     setMarket('All');
     setStatus('All');
     setPerformance('All');
   };
+
+  // Keep the old name for backward compatibility
+  const clearAllFilters = resetAllFilters;
 
   return {
     filters,
@@ -46,6 +48,7 @@ export const useProvidersFilters = () => {
     setStatus,
     setPerformance,
     clearAllFilters,
+    resetAllFilters,
     hasActiveFilters
   };
 };

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calendar, ChevronDown, Loader2 } from 'lucide-react';
+import { Calendar, ChevronDown, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,7 +11,7 @@ import { DateRange } from 'react-day-picker';
 import { useToast } from '@/hooks/use-toast';
 
 const TimeRangeSelector = () => {
-  const { filters, setTimeRangePreset, setCustomTimeRange, getTimeRangeDisplayLabel, isCustomTimeRange } = useDashboardFilters();
+  const { filters, setTimeRangePreset, setCustomTimeRange, getTimeRangeDisplayLabel, isCustomTimeRange, resetFilters, hasActiveFilters } = useDashboardFilters();
   const { isTransitioning, handleFilterChange } = useFilterTransitions();
   const { toast } = useToast();
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
@@ -68,6 +68,16 @@ const TimeRangeSelector = () => {
     setCustomDialogOpen(false);
   };
 
+  const handleReset = async () => {
+    await handleFilterChange(async () => {
+      await resetFilters();
+    });
+    toast({
+      title: "Filters Reset",
+      description: "Dashboard filters have been reset to defaults (30 days)"
+    });
+  };
+
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm text-muted-foreground hidden sm:inline">Period:</span>
@@ -115,9 +125,23 @@ const TimeRangeSelector = () => {
         </Button>
       </div>
 
+      {/* Reset Button */}
+      {hasActiveFilters() && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleReset}
+          disabled={isTransitioning}
+          className="h-8 px-2"
+          title="Reset filters to defaults"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      )}
+
       {/* Visual indicator for non-default ranges */}
-      {filters.timeRange.preset !== '24h' && (
-        <div className="w-2 h-2 rounded-full bg-blue-500" title="Viewing historical period" />
+      {filters.timeRange.preset !== '30d' && (
+        <div className="w-2 h-2 rounded-full bg-blue-500" title="Viewing non-default period" />
       )}
 
       {/* Custom Range Dialog */}

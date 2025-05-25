@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Calendar, ChevronDown } from 'lucide-react';
+import { Calendar, ChevronDown, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,13 +22,17 @@ interface TimeRangeSelectorProps {
   dateRange: DateRange | undefined;
   onPresetChange: (preset: TimeRangePreset) => void;
   onCustomRangeChange: (range: DateRange | undefined) => void;
+  onReset?: () => void;
+  hasActiveFilters?: boolean;
 }
 
 const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   selectedPreset,
   dateRange,
   onPresetChange,
-  onCustomRangeChange
+  onCustomRangeChange,
+  onReset,
+  hasActiveFilters = false
 }) => {
   const { toast } = useToast();
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
@@ -79,6 +82,16 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
     setCustomDialogOpen(false);
   };
 
+  const handleReset = () => {
+    if (onReset) {
+      onReset();
+      toast({
+        title: "Filters Reset",
+        description: "All filters have been reset to defaults"
+      });
+    }
+  };
+
   const getDisplayValue = () => {
     if (selectedPreset === 'custom' && dateRange?.from && dateRange?.to) {
       return `${dateRange.from.toLocaleDateString()} - ${dateRange.to.toLocaleDateString()}`;
@@ -87,7 +100,7 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
   };
 
   return (
-    <>
+    <div className="flex items-center gap-2">
       {/* Desktop Select */}
       <div className="hidden md:block">
         <Select value={selectedPreset} onValueChange={handlePresetChange}>
@@ -120,6 +133,19 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
           <ChevronDown className="h-3 w-3 ml-1" />
         </Button>
       </div>
+
+      {/* Reset Button */}
+      {hasActiveFilters && onReset && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleReset}
+          className="h-10 px-2"
+          title="Reset all filters"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      )}
 
       {/* Custom Range Dialog */}
       <Dialog open={customDialogOpen} onOpenChange={setCustomDialogOpen}>
@@ -171,7 +197,7 @@ const TimeRangeSelector: React.FC<TimeRangeSelectorProps> = ({
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 
