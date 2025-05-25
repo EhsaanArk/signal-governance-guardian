@@ -1,12 +1,17 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import ProvidersFilter from './ProvidersFilter';
 import ProvidersTable from './ProvidersTable';
+import ProviderDrawer from './ProviderDrawer';
 import { fetchProviders } from '@/lib/api/providers';
 import { useProvidersFilters } from '@/hooks/useProvidersFilters';
+import { Provider } from '@/types/provider';
 
 const ProvidersContainer: React.FC = () => {
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [providers, setProviders] = useState<Provider[]>([]);
+
   const {
     filters,
     setSearch,
@@ -17,10 +22,38 @@ const ProvidersContainer: React.FC = () => {
     hasActiveFilters
   } = useProvidersFilters();
 
-  const { data: providers = [], isLoading } = useQuery({
+  const { data: fetchedProviders = [], isLoading } = useQuery({
     queryKey: ['providers', filters],
-    queryFn: () => fetchProviders(filters)
+    queryFn: () => fetchProviders(filters),
+    onSuccess: (data) => {
+      setProviders(data);
+    }
   });
+
+  // Update providers when fetch completes
+  React.useEffect(() => {
+    setProviders(fetchedProviders);
+  }, [fetchedProviders]);
+
+  const selectedProvider = providers.find(p => p.id === selectedProviderId) || null;
+
+  const handleProviderClick = (providerId: string) => {
+    setSelectedProviderId(providerId);
+  };
+
+  const handleDrawerClose = () => {
+    setSelectedProviderId(null);
+  };
+
+  const handleProviderUpdate = (providerId: string, updates: Partial<Provider>) => {
+    setProviders(prev =>
+      prev.map(provider =>
+        provider.id === providerId
+          ? { ...provider, ...updates }
+          : provider
+      )
+    );
+  };
 
   return (
     <>
@@ -47,9 +80,20 @@ const ProvidersContainer: React.FC = () => {
             <p className="text-muted-foreground">No providers found matching your filters.</p>
           </div>
         ) : (
-          <ProvidersTable providers={providers} />
+          <ProvidersTable 
+            providers={providers} 
+            onProviderClick={handleProviderClick}
+          />
         )}
       </div>
+
+      <ProviderDrawer
+        isOpen={!!selectedProviderId}
+        onClose={handleDrawerClose}
+        providerId={selectedProviderId}
+        provider={selectedProvider}
+        onProviderUpdate={handleProviderUpdate}
+      />
     </>
   );
 };

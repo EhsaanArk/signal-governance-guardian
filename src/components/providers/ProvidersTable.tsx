@@ -13,14 +13,21 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import MarketChip from '@/components/common/MarketChip';
 import { Provider } from '@/types/provider';
 
 interface ProvidersTableProps {
   providers: Provider[];
+  onProviderClick: (providerId: string) => void;
 }
 
-const ProvidersTable: React.FC<ProvidersTableProps> = ({ providers }) => {
+const ProvidersTable: React.FC<ProvidersTableProps> = ({ providers, onProviderClick }) => {
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
 
   const toggleProvider = (providerId: string) => {
@@ -52,6 +59,19 @@ const ProvidersTable: React.FC<ProvidersTableProps> = ({ providers }) => {
     if (pnl > 0) return 'text-green-600';
     if (pnl < 0) return 'text-red-600';
     return 'text-gray-600';
+  };
+
+  const handleRowClick = (provider: Provider, event: React.MouseEvent) => {
+    // Don't trigger row click if clicking on checkbox or dropdown
+    if ((event.target as HTMLElement).closest('button') || 
+        (event.target as HTMLElement).closest('[role="checkbox"]')) {
+      return;
+    }
+    onProviderClick(provider.id);
+  };
+
+  const handleMenuClick = (provider: Provider) => {
+    onProviderClick(provider.id);
   };
 
   return (
@@ -89,7 +109,11 @@ const ProvidersTable: React.FC<ProvidersTableProps> = ({ providers }) => {
           </TableHeader>
           <TableBody>
             {providers.map((provider) => (
-              <TableRow key={provider.id}>
+              <TableRow 
+                key={provider.id}
+                className="cursor-pointer hover:bg-muted/50"
+                onClick={(e) => handleRowClick(provider, e)}
+              >
                 <TableCell>
                   <Checkbox
                     checked={selectedProviders.includes(provider.id)}
@@ -136,9 +160,21 @@ const ProvidersTable: React.FC<ProvidersTableProps> = ({ providers }) => {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleMenuClick(provider)}>
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleMenuClick(provider)}>
+                        Manage
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
