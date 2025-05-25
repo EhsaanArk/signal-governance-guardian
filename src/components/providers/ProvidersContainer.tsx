@@ -25,9 +25,6 @@ const ProvidersContainer: React.FC = () => {
   const { data: fetchedProviders = [], isLoading } = useQuery({
     queryKey: ['providers', filters],
     queryFn: () => fetchProviders(filters),
-    onSuccess: (data) => {
-      setProviders(data);
-    }
   });
 
   // Update providers when fetch completes

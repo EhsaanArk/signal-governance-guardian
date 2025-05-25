@@ -7,10 +7,11 @@ interface MarketChipProps {
   market: Market | 'All';
   onClick?: () => void;
   selected?: boolean;
+  size?: 'sm' | 'md';
 }
 
-const MarketChip: React.FC<MarketChipProps> = ({ market, onClick, selected = false }) => {
-  const baseClasses = "market-chip";
+const MarketChip: React.FC<MarketChipProps> = ({ market, onClick, selected = false, size = 'md' }) => {
+  const baseClasses = size === 'sm' ? "market-chip text-xs px-2 py-1" : "market-chip";
   
   const marketClasses = {
     All: "bg-gray-200 text-gray-800",
