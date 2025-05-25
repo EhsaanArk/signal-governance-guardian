@@ -8,7 +8,6 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +16,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 import MarketChip from '../common/MarketChip';
 import { BreachLog } from '@/types';
 
@@ -27,6 +32,7 @@ interface BreachTableProps {
 
 const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) => {
   const [selectedBreachId, setSelectedBreachId] = useState<string | null>(null);
+  const [isJsonExpanded, setIsJsonExpanded] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -42,21 +48,26 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
   const getActionBadgeColor = (action: string) => {
     switch (action) {
       case 'Cooldown':
-        return 'bg-warning text-warning-foreground';
+        return 'bg-orange-500 text-white hover:bg-orange-600';
       case 'Rejected':
-        return 'bg-destructive text-destructive-foreground';
+        return 'bg-red-600 text-white hover:bg-red-700';
+      case 'Suspended':
+        return 'bg-amber-600 text-white hover:bg-amber-700';
       case 'Limited':
         return 'bg-secondary text-secondary-foreground';
-      case 'Suspended':
-        return 'bg-red-500 text-white';
       default:
         return 'bg-primary text-primary-foreground';
     }
   };
 
+  const handleRowClick = (breachId: string) => {
+    setSelectedBreachId(breachId);
+    setIsJsonExpanded(false); // Reset JSON accordion when opening new breach
+  };
+
   const handleViewDetails = (e: React.MouseEvent, breachId: string) => {
     e.stopPropagation();
-    setSelectedBreachId(breachId);
+    handleRowClick(breachId);
   };
 
   const handleViewRuleSet = (e: React.MouseEvent, ruleSetId: string) => {
@@ -68,6 +79,14 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
 
   const handleCloseSheet = () => {
     setSelectedBreachId(null);
+    setIsJsonExpanded(false);
+  };
+
+  const handleEndCooldown = () => {
+    if (selectedBreach && onEndCoolDown) {
+      onEndCoolDown(selectedBreach.id);
+      handleCloseSheet();
+    }
   };
   
   return (
@@ -99,7 +118,11 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
               </tr>
             ) : (
               breaches.map((breach) => (
-                <tr key={breach.id}>
+                <tr 
+                  key={breach.id}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => handleRowClick(breach.id)}
+                >
                   <td>{formatTimestamp(breach.timestamp)}</td>
                   <td>{breach.provider}</td>
                   <td>
@@ -155,11 +178,15 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
           handleCloseSheet();
         }
       }}>
-        <SheetContent className="w-[480px] sm:w-[540px]">
+        <SheetContent 
+          className="w-[420px] sm:w-[420px]"
+          role="dialog"
+          aria-labelledby="breach-details-title"
+        >
           {selectedBreach && (
             <>
               <SheetHeader>
-                <SheetTitle>Breach Details</SheetTitle>
+                <SheetTitle id="breach-details-title">Breach Details</SheetTitle>
                 <SheetDescription>
                   {selectedBreach.timestamp && formatTimestamp(selectedBreach.timestamp)}
                 </SheetDescription>
@@ -168,15 +195,15 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
               <div className="mt-6 space-y-6">
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <h4 className="text-sm font-medium mb-1">Provider</h4>
+                    <h4 className="text-sm font-semibold text-gray-600 mb-1">Provider</h4>
                     <p>{selectedBreach.provider}</p>
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-1">Market</h4>
+                    <h4 className="text-sm font-semibold text-gray-600 mb-1">Market</h4>
                     <MarketChip market={selectedBreach.market} />
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium mb-1">Action</h4>
+                    <h4 className="text-sm font-semibold text-gray-600 mb-1">Action</h4>
                     <Badge className={getActionBadgeColor(selectedBreach.action)}>
                       {selectedBreach.action}
                     </Badge>
@@ -184,48 +211,62 @@ const BreachTable: React.FC<BreachTableProps> = ({ breaches, onEndCoolDown }) =>
                 </div>
                 
                 <div>
-                  <h4 className="text-sm font-medium mb-1">Rule Information</h4>
-                  <div className="rounded border p-3">
-                    <div className="mb-1">{selectedBreach.ruleSetName}</div>
+                  <h4 className="text-sm font-semibold text-gray-600 mb-1">Rule Information</h4>
+                  <div className="rounded border p-3 bg-gray-50">
+                    <div className="font-medium mb-1">{selectedBreach.ruleSetName}</div>
                     <div className="text-sm text-muted-foreground">{selectedBreach.subRule}</div>
                   </div>
                 </div>
                 
                 <div>
-                  <h4 className="text-sm font-medium mb-1">Details</h4>
-                  <div className="rounded border p-3">
+                  <h4 className="text-sm font-semibold text-gray-600 mb-1">Details</h4>
+                  <div className="rounded border p-3 bg-gray-50">
                     <p className="text-sm">{selectedBreach.details}</p>
                   </div>
                 </div>
                 
                 <div>
-                  <h4 className="text-sm font-medium mb-1">JSON Snapshot</h4>
-                  <div className="rounded border p-3 bg-muted/30">
-                    <pre className="text-xs overflow-auto max-h-[200px]">
-                      {JSON.stringify({
-                        id: selectedBreach.id,
-                        timestamp: selectedBreach.timestamp,
-                        provider: selectedBreach.provider,
-                        market: selectedBreach.market,
-                        ruleSet: {
-                          id: selectedBreach.ruleSetId,
-                          name: selectedBreach.ruleSetName,
-                        },
-                        subRule: selectedBreach.subRule,
-                        action: selectedBreach.action,
-                        details: selectedBreach.details,
-                      }, null, 2)}
-                    </pre>
-                  </div>
+                  <Collapsible open={isJsonExpanded} onOpenChange={setIsJsonExpanded}>
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        className="flex items-center gap-2 p-0 h-auto text-sm font-semibold text-gray-600"
+                        aria-expanded={isJsonExpanded}
+                      >
+                        JSON Snapshot
+                        <ChevronDown 
+                          className={`h-4 w-4 transition-transform duration-200 ${
+                            isJsonExpanded ? 'rotate-180' : ''
+                          }`} 
+                        />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-1">
+                      <div className="rounded border p-3 bg-muted/30">
+                        <pre className="text-xs overflow-auto max-h-[200px] whitespace-pre-wrap">
+                          {JSON.stringify({
+                            id: selectedBreach.id,
+                            timestamp: selectedBreach.timestamp,
+                            provider: selectedBreach.provider,
+                            market: selectedBreach.market,
+                            ruleSet: {
+                              id: selectedBreach.ruleSetId,
+                              name: selectedBreach.ruleSetName,
+                            },
+                            subRule: selectedBreach.subRule,
+                            action: selectedBreach.action,
+                            details: selectedBreach.details,
+                          }, null, 2)}
+                        </pre>
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </div>
                 
-                {selectedBreach.action === 'Cooldown' && onEndCoolDown && (
+                {selectedBreach.action === 'Cooldown' && (
                   <Button 
-                    onClick={() => {
-                      onEndCoolDown(selectedBreach.id);
-                      handleCloseSheet();
-                    }}
-                    className="w-full"
+                    onClick={handleEndCooldown}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     End Cool-down
                   </Button>
