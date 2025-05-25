@@ -44,7 +44,7 @@ export const fetchProviders = async (filters: ProvidersFilters): Promise<Provide
       is_active: provider.is_active,
       created_at: provider.created_at,
       updated_at: provider.updated_at,
-      metadata: provider.metadata,
+      metadata: (provider.metadata as Record<string, any>) || {},
       // Mock data
       markets: [mockMarkets],
       followers: mockFollowers,

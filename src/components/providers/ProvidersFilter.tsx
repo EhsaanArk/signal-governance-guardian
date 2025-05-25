@@ -108,9 +108,10 @@ const ProvidersFilter: React.FC<ProvidersFilterProps> = ({
         </div>
 
         {/* Clear Filters */}
-        {hasActiveFilters && (
-          <FilterClearButton onClear={onClearFilters} />
-        )}
+        <FilterClearButton
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={onClearFilters}
+        />
       </div>
     </div>
   );
